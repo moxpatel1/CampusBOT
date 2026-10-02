@@ -59,7 +59,8 @@ def render_template(request: Request, name: str, context: dict = None, status_co
     return templates.TemplateResponse(request=request, name=name, context=context, status_code=status_code)
 
 # Groq AI
-groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+groq_api_key = os.environ.get("GROQ_API_KEY")
+groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 # In-memory chat store
 chat_store: dict = {}
@@ -68,12 +69,20 @@ chat_store: dict = {}
 # DATABASE
 # ─────────────────────────────────────────
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:Mox_04_06%40@localhost:5432/PM-Chatbot"
-)
+raw_db_url = os.environ.get("DATABASE_URL", "").strip()
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+if not raw_db_url:
+    DATABASE_URL = "sqlite:///./campusbot.db"
+elif raw_db_url.startswith("postgres://"):
+    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql://", 1)
+else:
+    DATABASE_URL = raw_db_url
+
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False}, pool_pre_ping=True)
+else:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -267,6 +276,9 @@ def generate_bot_response(msg: str, uid: int, db: Session):
         pass
 
     # 2. Groq AI
+    if not groq_client:
+        return "I'm currently running without a GROQ_API_KEY. Please set GROQ_API_KEY in your environment variables to enable AI responses.", "ai"
+
     try:
         history = chat_store.get(uid, [])
         groq_messages = [{
