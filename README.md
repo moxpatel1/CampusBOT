@@ -65,34 +65,30 @@ CampusBot 2.0 is an intelligent, full-stack campus management and AI conversatio
 
 ```text
 CampusBOT/
-├── database/
-│   └── schema.sql             # SQL relational schema definitions
-├── static/
-│   ├── css/                   # Custom modular styling (Design system, Dark mode)
-│   │   ├── admin.css
-│   │   ├── dark-mode.css
-│   │   ├── design-system.css
-│   │   ├── features.css
-│   │   └── home.css
+├── .github/
+│   └── workflows/
+│       └── ci.yml             # GitHub Actions CI Workflow
+├── docs/                      # Documentation & Project Report
+│   └── CampusBot_Project_Report.md
+├── scripts/                   # Utility scripts
+│   └── seed_demo.py           # Database seeder script
+├── database/                  # SQL relational schema definitions
+│   └── schema.sql
+├── static/                    # Custom modular styling (Design system, Dark mode)
+│   ├── css/
 │   └── js/
-│       └── main.js            # Interactivity, AJAX, & UI controllers
 ├── templates/                 # Jinja2 HTML5 Templates
 │   ├── admin.html
-│   ├── attendance.html
 │   ├── base.html
-│   ├── cgpa.html
-│   ├── chat.html
-│   ├── dashboard.html
-│   ├── index.html
-│   ├── login.html
 │   └── ... (20+ responsive views)
+├── .env.example               # Example environment variables template
 ├── main.py                    # Core FastAPI backend, routing, API endpoints & ORM
-├── app.py                     # Legacy application entry/wrapper
-├── seed_demo.py               # Database seeder for demo users & sample records
 ├── run.bat                    # One-click Windows runner script
 ├── render.yaml                # Render Blueprint deployment manifest
 ├── requirements.txt           # Python dependencies manifest
 ├── Procfile                   # Process file for production ASGI deployment
+├── CONTRIBUTING.md            # Open-source contribution guide
+├── LICENSE                    # MIT License
 └── .gitignore                 # Excluded environments and cache files
 ```
 
