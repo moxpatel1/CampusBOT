@@ -1,0 +1,137 @@
+/* ═══════════════════════════════════════════════
+   FEATURES CSS — Timetable, Attendance, Profile,
+   Placements, Campus Map
+═══════════════════════════════════════════════ */
+
+/* ── SHARED INNER PAGE LAYOUT ── */
+.inner-page-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-2xl);
+}
+.inner-page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: var(--space-xl); flex-wrap: wrap; gap: var(--space-md);
+}
+.inner-page-header h2 { font-size: 1.5rem; }
+.inner-page-header p  { color: var(--text-muted); font-size: .85rem; margin-top: 2px; }
+
+/* ══════════════════════════════════════════
+   TIMETABLE
+══════════════════════════════════════════ */
+.day-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+}
+.day-tab {
+  padding: 8px 20px; border-radius: var(--radius-full);
+  background: #fff; border: 1.5px solid var(--border);
+  color: var(--text-secondary); font-size: .875rem; font-weight: 500;
+  cursor: pointer; transition: var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+.day-tab:hover  { border-color: var(--accent-border); color: var(--accent); }
+.day-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(67,97,238,.3); }
+
+.tt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-md);
+}
+.tt-card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  position: relative;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.tt-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.tt-time    { font-size: .78rem; font-weight: 700; margin-bottom: 6px; }
+.tt-subject { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.tt-meta    { display: flex; flex-direction: column; gap: 4px; font-size: .78rem; color: var(--text-secondary); }
+.tt-meta span { display: flex; align-items: center; gap: 6px; }
+.tt-delete {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(239,68,68,.1); border: none; border-radius: var(--radius-sm);
+  color: var(--red); cursor: pointer; padding: 4px 8px; font-size: .75rem;
+  opacity: 0; transition: var(--transition-fast);
+}
+.tt-card:hover .tt-delete { opacity: 1; }
+.tt-loading { text-align: center; padding: 60px; color: var(--text-muted); font-size: .9rem; }
+
+/* ══════════════════════════════════════════
+   ATTENDANCE
+══════════════════════════════════════════ */
+.att-card {
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+.att-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-md); gap: var(--space-md);
+}
+.att-subject { font-size: .95rem; font-weight: 600; color: var(--text-primary); }
+.att-counts  { font-size: .78rem; color: var(--text-muted); margin-top: 3px; }
+.att-bar-wrap {
+  height: 6px; background: var(--border);
+  border-radius: var(--radius-full); overflow: hidden;
+}
+.att-bar-fill {
+  height: 100%; border-radius: var(--radius-full);
+  transition: width 1s ease;
+}
+.att-warning {
+  margin-top: var(--space-sm);
+  font-size: .78rem; color: var(--red);
+  display: flex; align-items: center; gap: 6px;
+  background: #fff5f5; padding: 8px 12px;
+  border-radius: var(--radius-sm); border: 1px solid #fecaca;
+}
+
+/* ══════════════════════════════════════════
+   PROFILE
+══════════════════════════════════════════ */
+.profile-big-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 800; color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(67,97,238,.3);
+}
+
+/* ══════════════════════════════════════════
+   PLACEMENTS
+══════════════════════════════════════════ */
+.placement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-lg);
+}
+.placement-card { padding: var(--space-lg); }
+.placement-card-header {
+  display: flex; align-items: flex-start; gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.placement-company-logo {
+  width: 48px; height: 48px; border-radius: var(--radius-md);
+  background: var(--accent); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 800; flex-shrink: 0;
+}
+.placement-company { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.placement-role    { font-size: .82rem; color: var(--text-secondary); margin-top: 2px; }
+.placement-details { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-md); }
+.placement-detail  { font-size: .8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.placement-detail i { color: var(--accent); width: 14px; }
+.placement-card-footer { display: flex; justify-content: flex-end; padding-top: var(--space-sm); border-top: 1px solid var(--border); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .inner-page-layout { padding: var(--space-lg); }
+  .campus-map-layout { grid-template-columns: 1fr; }
+  .campus-list-panel { max-height: 200px; overflow-y: auto; }
+  .building-info-grid { grid-template-columns: 1fr; }
+  .placement-grid { grid-template-columns: 1fr; }
+  .tt-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Fees — CampusBot{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+<div class="inner-page-layout">
+  <div class="inner-page-header">
+    <div>
+      <h2>Fee <span class="gradient-text">Management</span></h2>
+      <p>Track your fee payments and pending dues</p>
+    </div>
+    {% if session.get('user_role') in ['admin','faculty'] %}
+    <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-fee')">
+      <i class="fa-solid fa-plus"></i> Add Fee
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Summary cards -->
+  <div class="stats-grid" id="fee-summary" style="margin-bottom:var(--space-xl)">
+    <div class="glass-card stat-card">
+      <div class="icon-box icon-box-orange"><i class="fa-solid fa-clock"></i></div>
+      <div class="stat-info"><div class="stat-value" id="fee-pending">—</div><div class="stat-label">Pending (₹)</div></div>
+    </div>
+    <div class="glass-card stat-card">
+      <div class="icon-box icon-box-green"><i class="fa-solid fa-circle-check"></i></div>
+      <div class="stat-info"><div class="stat-value" id="fee-paid">—</div><div class="stat-label">Paid (₹)</div></div>
+    </div>
+    <div class="glass-card stat-card">
+      <div class="icon-box icon-box-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="stat-info"><div class="stat-value" id="fee-overdue">—</div><div class="stat-label">Overdue (₹)</div></div>
+    </div>
+  </div>
+
+  <div id="fee-list">
+    <div class="skeleton" style="height:72px;border-radius:12px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:72px;border-radius:12px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:72px;border-radius:12px"></div>
+  </div>
+</div>
+</div>
+
+{% if session.get('user_role') in ['admin','faculty'] %}
+<div class="modal-overlay" id="modal-fee">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-indian-rupee-sign" style="color:var(--accent)"></i> Add Fee Record</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-fee')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-fee">
+      <div class="form-group"><label class="form-label">Fee Title *</label><input type="text" class="form-input" id="fee-title" placeholder="e.g. Semester 4 Tuition Fee" required /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount (₹) *</label><input type="number" class="form-input" id="fee-amount" placeholder="45000" required /></div>
+        <div class="form-group"><label class="form-label">Due Date</label><input type="datetime-local" class="form-input" id="fee-due" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Assign To</label>
+        <select class="form-select" id="fee-user"><option value="">All Students</option></select>
+      </div>
+      <div id="fee-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-fee')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Add</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadFees() {
+  const list = document.getElementById('fee-list');
+  try {
+    const r = await fetch('/api/fees');
+    const data = await r.json();
+    let pending = 0, paid = 0, overdue = 0;
+    data.forEach(f => {
+      if (f.status === 'pending') pending += f.amount;
+      else if (f.status === 'paid') paid += f.amount;
+      else if (f.status === 'overdue') overdue += f.amount;
+    });
+    document.getElementById('fee-pending').textContent = '₹' + pending.toLocaleString();
+    document.getElementById('fee-paid').textContent    = '₹' + paid.toLocaleString();
+    document.getElementById('fee-overdue').textContent = '₹' + overdue.toLocaleString();
+
+    if (!data.length) { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-receipt"></i><p>No fee records yet</p></div>'; return; }
+    const sc = { pending:'badge-orange', paid:'badge-green', overdue:'badge-red' };
+    list.innerHTML = data.map(f => `
+      <div class="glass-card" style="padding:var(--space-lg);margin-bottom:10px;display:flex;align-items:center;gap:var(--space-md)">
+        <div class="icon-box icon-box-${f.status==='paid'?'green':f.status==='overdue'?'red':'orange'}">
+          <i class="fa-solid fa-${f.status==='paid'?'circle-check':f.status==='overdue'?'triangle-exclamation':'clock'}"></i>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600">${f.title}</div>
+          <div style="font-size:.78rem;color:var(--text-muted)">Due: ${f.due_date||'—'} ${f.paid_date?'· Paid: '+f.paid_date:''}</div>
+        </div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">₹${f.amount.toLocaleString()}</div>
+        <span class="badge ${sc[f.status]||'badge-gray'}">${f.status}</span>
+        ${f.status === 'pending' ? `<button class="btn btn-primary btn-sm" onclick="payFee(${f.id},this)"><i class="fa-solid fa-check"></i> Pay</button>` : ''}
+      </div>`).join('');
+  } catch { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load fees</p></div>'; }
+}
+
+async function payFee(id, btn) {
+  btn.classList.add('loading');
+  const r = await fetch(`/api/fees/${id}/pay`, { method: 'POST' });
+  const d = await r.json();
+  if (d.success) { CampusBot.showToast('Payment recorded!', 'success'); loadFees(); }
+  else { btn.classList.remove('loading'); CampusBot.showToast(d.error, 'error'); }
+}
+
+{% if session.get('user_role') in ['admin','faculty'] %}
+async function loadStudents() {
+  const r = await fetch('/api/admin/users');
+  const users = await r.json();
+  const sel = document.getElementById('fee-user');
+  users.filter(u => u.role === 'student').forEach(u => {
+    sel.innerHTML += `<option value="${u.id}">${u.name}</option>`;
+  });
+}
+document.getElementById('form-fee').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  const alertEl = document.getElementById('fee-alert');
+  alertEl.innerHTML = '';
+  try {
+    const uid = document.getElementById('fee-user').value;
+    const r = await fetch('/api/admin/fees', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        title: document.getElementById('fee-title').value.trim(),
+        amount: document.getElementById('fee-amount').value,
+        due_date: document.getElementById('fee-due').value || null,
+        user_id: uid ? parseInt(uid) : null
+      })
+    });
+    const d = await r.json();
+    if (d.success) { CampusBot.closeModal('modal-fee'); CampusBot.showToast(`Fee added for ${d.created} student(s)`, 'success'); e.target.reset(); loadFees(); }
+    else alertEl.innerHTML = `<div class="alert alert-error">${d.error}</div>`;
+  } catch { alertEl.innerHTML = '<div class="alert alert-error">Failed</div>'; }
+  btn.classList.remove('loading');
+});
+loadStudents();
+{% endif %}
+loadFees();
+</script>
+{% endblock %}

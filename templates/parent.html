@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}Parent Portal — CampusBot{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+<div class="inner-page-layout">
+
+  <div class="inner-page-header">
+    <div>
+      <h2>Parent <span class="gradient-text">Portal</span></h2>
+      <p>Monitor your child's academic progress in real time</p>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="loadData()">
+      <i class="fa-solid fa-rotate-right"></i> Refresh
+    </button>
+  </div>
+
+  <!-- Link student section -->
+  <div class="glass-card" id="link-section" style="padding:var(--space-xl);margin-bottom:var(--space-xl)">
+    <h4 style="margin-bottom:var(--space-md)">
+      <i class="fa-solid fa-link" style="color:var(--accent)"></i> Link Your Child's Account
+    </h4>
+    <p style="font-size:.875rem;margin-bottom:var(--space-md)">Enter your child's registered email address to link their account and view their progress.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input type="email" class="form-input" id="student-email" placeholder="student@campus.edu" style="max-width:320px" />
+      <button class="btn btn-primary" onclick="linkStudent()">
+        <i class="fa-solid fa-link"></i>
+        <span class="btn-text">Link Account</span>
+      </button>
+    </div>
+    <div id="link-alert" style="margin-top:var(--space-md)"></div>
+  </div>
+
+  <!-- Student overview (shown after linking) -->
+  <div id="student-overview" style="display:none">
+
+    <!-- Student info card -->
+    <div class="glass-card" id="student-info-card" style="padding:var(--space-xl);margin-bottom:var(--space-xl);background:linear-gradient(135deg,#f0f4ff,#faf5ff);border-color:#ddd6fe">
+      <div style="display:flex;align-items:center;gap:var(--space-lg);flex-wrap:wrap">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:white;flex-shrink:0" id="student-avatar">S</div>
+        <div style="flex:1">
+          <h3 id="student-name" style="margin-bottom:4px">—</h3>
+          <p id="student-dept" style="font-size:.875rem;margin-bottom:8px">—</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span class="badge badge-blue">Student</span>
+            <span class="badge badge-green" id="student-events-badge">— upcoming events</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-grid" style="margin-bottom:var(--space-xl)">
+      <div class="glass-card stat-card">
+        <div class="icon-box icon-box-orange"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="p-pending">—</div>
+          <div class="stat-label">Pending Tasks</div>
+        </div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="icon-box icon-box-green"><i class="fa-solid fa-clipboard-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="p-avg-att">—</div>
+          <div class="stat-label">Avg Attendance</div>
+        </div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="icon-box icon-box-red"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="p-fees-due">—</div>
+          <div class="stat-label">Fees Pending (₹)</div>
+        </div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="icon-box icon-box-cyan"><i class="fa-solid fa-calendar-days"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="p-events">—</div>
+          <div class="stat-label">Upcoming Events</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two column grid -->
+    <div class="dashboard-grid">
+
+      <!-- Assignments -->
+      <div class="glass-card widget">
+        <div class="widget-header">
+          <div class="widget-title-group">
+            <div class="icon-box icon-box-sm icon-box-orange"><i class="fa-solid fa-file-lines"></i></div>
+            <span class="widget-title">Assignments</span>
+          </div>
+        </div>
+        <div id="p-assignments-list">
+          <div class="skeleton" style="height:50px;border-radius:8px;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:50px;border-radius:8px"></div>
+        </div>
+      </div>
+
+      <!-- Attendance -->
+      <div class="glass-card widget">
+        <div class="widget-header">
+          <div class="widget-title-group">
+            <div class="icon-box icon-box-sm icon-box-green"><i class="fa-solid fa-clipboard-check"></i></div>
+            <span class="widget-title">Attendance by Subject</span>
+          </div>
+        </div>
+        <div id="p-attendance-list">
+          <div class="skeleton" style="height:50px;border-radius:8px;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:50px;border-radius:8px"></div>
+        </div>
+      </div>
+
+      <!-- Fees -->
+      <div class="glass-card widget">
+        <div class="widget-header">
+          <div class="widget-title-group">
+            <div class="icon-box icon-box-sm icon-box-red"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <span class="widget-title">Fee Status</span>
+          </div>
+        </div>
+        <div id="p-fees-list">
+          <div class="skeleton" style="height:50px;border-radius:8px;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:50px;border-radius:8px"></div>
+        </div>
+      </div>
+
+      <!-- Recent Notifications -->
+      <div class="glass-card widget">
+        <div class="widget-header">
+          <div class="widget-title-group">
+            <div class="icon-box icon-box-sm icon-box-blue"><i class="fa-solid fa-bell"></i></div>
+            <span class="widget-title">Recent Alerts</span>
+          </div>
+        </div>
+        <div id="p-notifs-list">
+          <div class="skeleton" style="height:50px;border-radius:8px;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:50px;border-radius:8px"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Not linked state -->
+  <div id="not-linked-state" style="display:none;text-align:center;padding:60px 20px">
+    <i class="fa-solid fa-user-slash" style="font-size:3rem;color:var(--text-muted);opacity:.3;display:block;margin-bottom:16px"></i>
+    <h3 style="margin-bottom:8px">No student linked yet</h3>
+    <p>Enter your child's email above to start monitoring their progress.</p>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadData() {
+  try {
+    const r = await fetch('/api/parent/student-data');
+    const d = await r.json();
+
+    if (!d.linked) {
+      document.getElementById('student-overview').style.display = 'none';
+      document.getElementById('not-linked-state').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('not-linked-state').style.display = 'none';
+    document.getElementById('student-overview').style.display = 'block';
+
+    // Student info
+    const s = d.student;
+    document.getElementById('student-avatar').textContent = s.name[0].toUpperCase();
+    document.getElementById('student-name').textContent   = s.name;
+    document.getElementById('student-dept').textContent   = s.department + ' · ' + s.email;
+    document.getElementById('student-events-badge').textContent = d.upcoming_events + ' upcoming events';
+
+    // Stats
+    const pending = d.assignments.filter(a => a.status === 'pending').length;
+    const avgAtt  = d.attendance.length
+      ? Math.round(d.attendance.reduce((s, a) => s + a.percentage, 0) / d.attendance.length)
+      : 0;
+    const feesDue = d.fees.filter(f => f.status === 'pending').reduce((s, f) => s + f.amount, 0);
+
+    document.getElementById('p-pending').textContent   = pending;
+    document.getElementById('p-avg-att').textContent   = avgAtt + '%';
+    document.getElementById('p-fees-due').textContent  = '₹' + feesDue.toLocaleString();
+    document.getElementById('p-events').textContent    = d.upcoming_events;
+
+    // Assignments
+    const aList = document.getElementById('p-assignments-list');
+    const sc = { pending:'badge-orange', submitted:'badge-green', graded:'badge-blue' };
+    aList.innerHTML = d.assignments.length
+      ? d.assignments.map(a => `
+          <div class="list-item">
+            <div class="icon-box icon-box-sm icon-box-orange"><i class="fa-solid fa-file-lines"></i></div>
+            <div class="list-item-info">
+              <div class="list-item-title">${a.title}</div>
+              <div class="list-item-meta">${a.subject || '—'} · Due ${a.due_date || 'TBD'}</div>
+            </div>
+            <span class="badge ${sc[a.status]||'badge-gray'}">${a.status}</span>
+          </div>`).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>No assignments</p></div>';
+
+    // Attendance
+    const attList = document.getElementById('p-attendance-list');
+    attList.innerHTML = d.attendance.length
+      ? d.attendance.map(a => {
+          const color = a.percentage >= 75 ? '#16a34a' : a.percentage >= 60 ? '#d97706' : '#dc2626';
+          const badge = a.percentage >= 75 ? 'badge-green' : a.percentage >= 60 ? 'badge-orange' : 'badge-red';
+          return `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                <span style="font-size:.875rem;font-weight:500">${a.subject}</span>
+                <span class="badge ${badge}">${a.percentage}%</span>
+              </div>
+              <div style="height:5px;background:var(--border);border-radius:99px;overflow:hidden">
+                <div style="height:100%;width:${a.percentage}%;background:${color};border-radius:99px;transition:width 1s ease"></div>
+              </div>
+              <div style="font-size:.72rem;color:var(--text-muted);margin-top:3px">${a.present} present · ${a.absent} absent</div>
+            </div>`;
+        }).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>No attendance records</p></div>';
+
+    // Fees
+    const fList = document.getElementById('p-fees-list');
+    const fsc = { pending:'badge-orange', paid:'badge-green', overdue:'badge-red' };
+    fList.innerHTML = d.fees.length
+      ? d.fees.map(f => `
+          <div class="list-item">
+            <div class="icon-box icon-box-sm icon-box-${f.status==='paid'?'green':f.status==='overdue'?'red':'orange'}">
+              <i class="fa-solid fa-${f.status==='paid'?'circle-check':f.status==='overdue'?'triangle-exclamation':'clock'}"></i>
+            </div>
+            <div class="list-item-info">
+              <div class="list-item-title">${f.title}</div>
+              <div class="list-item-meta">Due ${f.due_date||'—'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:700;font-size:.875rem">₹${f.amount.toLocaleString()}</div>
+              <span class="badge ${fsc[f.status]||'badge-gray'}">${f.status}</span>
+            </div>
+          </div>`).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-receipt"></i><p>No fee records</p></div>';
+
+    // Notifications
+    const nList = document.getElementById('p-notifs-list');
+    nList.innerHTML = d.notifications.length
+      ? d.notifications.map(n => `
+          <div class="list-item">
+            <div class="icon-box icon-box-sm icon-box-blue"><i class="fa-solid fa-bell"></i></div>
+            <div class="list-item-info">
+              <div class="list-item-title">${n.title}</div>
+              <div class="list-item-meta">${n.message || ''} · ${n.created_at}</div>
+            </div>
+          </div>`).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-bell-slash"></i><p>No recent alerts</p></div>';
+
+  } catch(e) {
+    console.error('Parent data error:', e);
+  }
+}
+
+async function linkStudent() {
+  const email = document.getElementById('student-email').value.trim();
+  const alertEl = document.getElementById('link-alert');
+  alertEl.innerHTML = '';
+  if (!email) { alertEl.innerHTML = '<div class="alert alert-error">Please enter an email address</div>'; return; }
+
+  const btn = document.querySelector('[onclick="linkStudent()"]');
+  btn.classList.add('loading');
+  try {
+    const r = await fetch('/api/parent/link-student', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ student_email: email })
+    });
+    const d = await r.json();
+    if (d.success) {
+      alertEl.innerHTML = `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Linked to <strong>${d.student_name}</strong> successfully!</div>`;
+      document.getElementById('student-email').value = '';
+      setTimeout(() => loadData(), 800);
+    } else {
+      alertEl.innerHTML = `<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> ${d.error}</div>`;
+    }
+  } catch {
+    alertEl.innerHTML = '<div class="alert alert-error">Connection error</div>';
+  }
+  btn.classList.remove('loading');
+}
+
+// Load on page open
+loadData();
+</script>
+{% endblock %}

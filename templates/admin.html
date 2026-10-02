@@ -1,0 +1,1028 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — CampusBot{% endblock %}
+
+{% block extra_css %}
+<style>
+.bulk-checkbox { width:15px; height:15px; cursor:pointer; accent-color:var(--accent); }
+.bulk-bar-btn  { animation: fadeInDown 0.2s ease; }
+/* Day tabs inside admin panel */
+.day-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.day-tab {
+  padding: 7px 16px; border-radius: var(--radius-full);
+  background: #fff; border: 1.5px solid var(--border);
+  color: var(--text-secondary); font-size: .82rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+.day-tab:hover  { border-color: var(--accent-border); color: var(--accent); }
+.day-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+<div class="admin-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-header">
+      <div class="admin-avatar">{{ user.name[0].upper() }}</div>
+      <div>
+        <div class="admin-name">{{ user.name }}</div>
+        <div class="admin-role-label">Administrator</div>
+      </div>
+    </div>
+    <nav class="admin-nav">
+      <button class="admin-nav-item active" data-tab="overview"><i class="fa-solid fa-chart-pie"></i> Overview</button>
+      <button class="admin-nav-item" data-tab="users"><i class="fa-solid fa-users"></i> Users <span class="admin-nav-count" id="nav-users-count">—</span></button>
+      <button class="admin-nav-item" data-tab="events"><i class="fa-solid fa-calendar-days"></i> Events <span class="admin-nav-count" id="nav-events-count">—</span></button>
+      <button class="admin-nav-item" data-tab="assignments"><i class="fa-solid fa-file-lines"></i> Assignments <span class="admin-nav-count" id="nav-assign-count">—</span></button>
+      <button class="admin-nav-item" data-tab="timetable"><i class="fa-solid fa-clock"></i> Timetable</button>
+      <button class="admin-nav-item" data-tab="fees"><i class="fa-solid fa-indian-rupee-sign"></i> Fees</button>
+      <button class="admin-nav-item" data-tab="announcements"><i class="fa-solid fa-bullhorn"></i> Announcements</button>
+      <button class="admin-nav-item" data-tab="tickets"><i class="fa-solid fa-ticket"></i> Tickets <span class="admin-nav-count" id="nav-tickets-count">—</span></button>
+      <button class="admin-nav-item" data-tab="faqs"><i class="fa-solid fa-circle-question"></i> FAQs</button>
+      <button class="admin-nav-item" data-tab="analytics"><i class="fa-solid fa-chart-bar"></i> Analytics</button>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <a href="/dashboard" class="admin-nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+      <button class="admin-nav-item danger" data-action="logout"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+
+    <!-- TAB: OVERVIEW -->
+    <div class="admin-tab active" id="tab-overview">
+      <div class="admin-tab-header">
+        <div><h2>Platform <span class="gradient-text">Overview</span></h2><p>Real-time stats from the database</p></div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAll()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+      </div>
+      <div class="admin-stats-grid">
+        <div class="admin-stat-card"><div class="icon-box icon-box-blue"><i class="fa-solid fa-users"></i></div><div><div class="stat-big" id="s-users">—</div><div class="stat-lbl">Total Users</div></div></div>
+        <div class="admin-stat-card"><div class="icon-box icon-box-green"><i class="fa-solid fa-user-graduate"></i></div><div><div class="stat-big" id="s-students">—</div><div class="stat-lbl">Students</div></div></div>
+        <div class="admin-stat-card"><div class="icon-box icon-box-purple"><i class="fa-solid fa-chalkboard-user"></i></div><div><div class="stat-big" id="s-faculty">—</div><div class="stat-lbl">Faculty</div></div></div>
+        <div class="admin-stat-card"><div class="icon-box icon-box-cyan"><i class="fa-solid fa-robot"></i></div><div><div class="stat-big" id="s-msgs">—</div><div class="stat-lbl">AI Messages</div></div></div>
+        <div class="admin-stat-card"><div class="icon-box icon-box-orange"><i class="fa-solid fa-calendar-days"></i></div><div><div class="stat-big" id="s-events">—</div><div class="stat-lbl">Events</div></div></div>
+      </div>
+      <div class="admin-two-col">
+        <div class="admin-card">
+          <div class="admin-card-header"><div class="icon-box icon-box-sm icon-box-green"><i class="fa-solid fa-server"></i></div><h4>System Status</h4></div>
+          <div class="status-list">
+            <div class="status-row"><span>FastAPI Backend</span><span class="badge badge-green">Online</span></div>
+            <div class="status-row"><span>PostgreSQL</span><span class="badge badge-green">Connected</span></div>
+            <div class="status-row"><span>AI Engine</span><span class="badge badge-green">Active</span></div>
+            <div class="status-row"><span>Chat Store</span><span class="badge badge-green">In-Memory</span></div>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header"><div class="icon-box icon-box-sm icon-box-blue"><i class="fa-solid fa-bolt"></i></div><h4>Quick Actions</h4></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-secondary w-full" style="justify-content:flex-start" onclick="switchTab('events');CampusBot.openModal('modal-event')"><i class="fa-solid fa-calendar-plus"></i> Create Event</button>
+            <button class="btn btn-secondary w-full" style="justify-content:flex-start" onclick="switchTab('assignments');CampusBot.openModal('modal-assignment')"><i class="fa-solid fa-file-circle-plus"></i> Add Assignment</button>
+            <button class="btn btn-secondary w-full" style="justify-content:flex-start" onclick="switchTab('timetable');CampusBot.openModal('modal-timetable')"><i class="fa-solid fa-clock"></i> Add Timetable Slot</button>
+            <button class="btn btn-secondary w-full" style="justify-content:flex-start" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> View All Users</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: USERS -->
+    <div class="admin-tab" id="tab-users">
+      <div class="admin-tab-header">
+        <div><h2>Registered <span class="gradient-text">Users</span></h2><p>All users who have signed up on CampusBot</p></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" class="form-input" id="user-search" placeholder="Search name, email, role..." style="width:200px" oninput="filterUsers(this.value)" />
+          <button class="btn btn-danger btn-sm bulk-bar-btn" id="bulk-delete-users" onclick="bulkDelete('users')" style="display:none">
+            <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="users-sel-count">0</span>)
+          </button>
+        </div>
+      </div>
+      <div class="admin-card" style="padding:0;overflow:hidden">
+        <div class="users-table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" class="bulk-checkbox" id="check-all-users" onchange="toggleAll('users',this)"></th>
+                <th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Joined</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"><tr><td colspan="8" class="table-loading">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: EVENTS -->
+    <div class="admin-tab" id="tab-events">
+      <div class="admin-tab-header">
+        <div><h2>Campus <span class="gradient-text">Events</span></h2><p>Create and manage all campus events</p></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-danger btn-sm bulk-bar-btn" id="bulk-delete-events" onclick="bulkDelete('events')" style="display:none">
+            <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="events-sel-count">0</span>)
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-event')"><i class="fa-solid fa-plus"></i> New Event</button>
+        </div>
+      </div>
+      <div class="admin-card" style="padding:0;overflow:hidden">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" class="bulk-checkbox" id="check-all-events" onchange="toggleAll('events',this)"></th>
+              <th>Title</th><th>Type</th><th>Date</th><th>Location</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody"><tr><td colspan="6" class="table-loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: ASSIGNMENTS -->
+    <div class="admin-tab" id="tab-assignments">
+      <div class="admin-tab-header">
+        <div><h2>Manage <span class="gradient-text">Assignments</span></h2><p>Add assignments for individual students or all students</p></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-danger btn-sm bulk-bar-btn" id="bulk-delete-assignments" onclick="bulkDelete('assignments')" style="display:none">
+            <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="assignments-sel-count">0</span>)
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-assignment')"><i class="fa-solid fa-plus"></i> Add Assignment</button>
+        </div>
+      </div>
+      <div class="admin-card" style="padding:0;overflow:hidden">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" class="bulk-checkbox" id="check-all-assignments" onchange="toggleAll('assignments',this)"></th>
+              <th>Title</th><th>Subject</th><th>Assigned To</th><th>Due Date</th><th>Status</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="assignments-tbody"><tr><td colspan="7" class="table-loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: TIMETABLE -->
+    <div class="admin-tab" id="tab-timetable">
+      <div class="admin-tab-header">
+        <div><h2>Class <span class="gradient-text">Timetable</span></h2><p>Create and manage weekly class schedules per department</p></div>
+        <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-timetable')">
+          <i class="fa-solid fa-plus"></i> Add Slot
+        </button>
+      </div>
+
+      <!-- Department filter -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-lg)">
+        <label style="font-size:.82rem;font-weight:600;color:var(--text-secondary);white-space:nowrap">Department:</label>
+        <select class="form-select" id="tt-dept-filter" style="width:200px" onchange="loadAdminTimetable()">
+          <option value="">All Departments</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Mechanical">Mechanical</option>
+          <option value="Civil">Civil</option>
+          <option value="Business">Business</option>
+          <option value="Arts">Arts</option>
+        </select>
+        <div class="day-tabs" id="admin-day-tabs" style="margin-bottom:0">
+          <button class="day-tab active" data-aday="Monday">Mon</button>
+          <button class="day-tab" data-aday="Tuesday">Tue</button>
+          <button class="day-tab" data-aday="Wednesday">Wed</button>
+          <button class="day-tab" data-aday="Thursday">Thu</button>
+          <button class="day-tab" data-aday="Friday">Fri</button>
+          <button class="day-tab" data-aday="Saturday">Sat</button>
+        </div>
+      </div>
+
+      <div id="admin-tt-container">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-md)">
+          <div class="skeleton" style="height:100px;border-radius:12px"></div>
+          <div class="skeleton" style="height:100px;border-radius:12px"></div>
+          <div class="skeleton" style="height:100px;border-radius:12px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: FEES -->
+    <div class="admin-tab" id="tab-fees">
+      <div class="admin-tab-header">
+        <div><h2>Fee <span class="gradient-text">Management</span></h2><p>Add and track student fee records</p></div>
+        <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-admin-fee')"><i class="fa-solid fa-plus"></i> Add Fee</button>
+      </div>
+      <div class="admin-card" style="padding:0;overflow:hidden">
+        <table class="users-table">
+          <thead><tr><th>Title</th><th>Student</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead>
+          <tbody id="fees-tbody"><tr><td colspan="5" class="table-loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: ANNOUNCEMENTS -->
+    <div class="admin-tab" id="tab-announcements">
+      <div class="admin-tab-header">
+        <div><h2>Campus <span class="gradient-text">Announcements</span></h2><p>Post notices visible to all users</p></div>
+        <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-admin-ann')"><i class="fa-solid fa-plus"></i> Post Announcement</button>
+      </div>
+      <div id="admin-ann-list" style="display:flex;flex-direction:column;gap:10px">
+        <div class="skeleton" style="height:80px;border-radius:12px"></div>
+      </div>
+    </div>
+
+    <!-- TAB: TICKETS -->
+    <div class="admin-tab" id="tab-tickets">
+      <div class="admin-tab-header">
+        <div><h2>Support <span class="gradient-text">Tickets</span></h2><p>Respond to student complaints and queries</p></div>
+      </div>
+      <div class="admin-card" style="padding:0;overflow:hidden">
+        <table class="users-table">
+          <thead><tr><th>#</th><th>Student</th><th>Subject</th><th>Category</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="tickets-tbody"><tr><td colspan="7" class="table-loading">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: FAQs -->
+    <div class="admin-tab" id="tab-faqs">
+      <div class="admin-tab-header">
+        <div><h2>FAQ <span class="gradient-text">Management</span></h2><p>Manage frequently asked questions for the chatbot</p></div>
+        <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-admin-faq')"><i class="fa-solid fa-plus"></i> Add FAQ</button>
+      </div>
+      <div id="admin-faq-list" style="display:flex;flex-direction:column;gap:10px">
+        <div class="skeleton" style="height:80px;border-radius:12px"></div>
+      </div>
+    </div>
+
+    <!-- TAB: ANALYTICS -->
+    <div class="admin-tab" id="tab-analytics">
+      <div class="admin-tab-header">
+        <div><h2>Query <span class="gradient-text">Analytics</span></h2><p>Most asked chatbot queries by category</p></div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAnalytics()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+      </div>
+      <div class="admin-two-col">
+        <div class="admin-card">
+          <div class="admin-card-header"><div class="icon-box icon-box-sm icon-box-blue"><i class="fa-solid fa-chart-bar"></i></div><h4>Queries by Category</h4></div>
+          <div id="analytics-chart" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header"><div class="icon-box icon-box-sm icon-box-purple"><i class="fa-solid fa-clock-rotate-left"></i></div><h4>Recent Queries</h4></div>
+          <div id="analytics-recent" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- MODAL: CREATE EVENT -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-calendar-plus" style="color:var(--accent)"></i> Create Event</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-event')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-event">
+      <div class="form-group"><label class="form-label">Event Title *</label><input type="text" class="form-input" id="ev-title" placeholder="e.g. Annual Tech Symposium" required /></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="ev-desc" rows="2" placeholder="Brief description..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Type *</label>
+          <select class="form-select" id="ev-type">
+            <option value="academic">Academic</option><option value="cultural">Cultural</option>
+            <option value="sports">Sports</option><option value="seminar">Seminar</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Date &amp; Time *</label><input type="datetime-local" class="form-input" id="ev-date" required /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Location</label><input type="text" class="form-input" id="ev-location" placeholder="e.g. Auditorium A" /></div>
+      <div id="ev-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-event')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Create Event</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD ASSIGNMENT -->
+<div class="modal-overlay" id="modal-assignment">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-file-circle-plus" style="color:var(--accent)"></i> Add Assignment</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-assignment')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-assignment">
+      <div class="form-group"><label class="form-label">Assignment Title *</label><input type="text" class="form-input" id="as-title" placeholder="e.g. Data Structures Assignment 3" required /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Subject</label><input type="text" class="form-input" id="as-subject" placeholder="e.g. Computer Science" /></div>
+        <div class="form-group"><label class="form-label">Due Date</label><input type="datetime-local" class="form-input" id="as-due" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Assign To</label>
+        <select class="form-select" id="as-user"><option value="">— All Students —</option></select>
+      </div>
+      <div id="as-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-assignment')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i><span class="btn-text"> Assign</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD TIMETABLE SLOT -->
+<div class="modal-overlay" id="modal-timetable">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-clock" style="color:var(--accent)"></i> Add Timetable Slot</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-timetable')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-admin-tt">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Department *</label>
+          <select class="form-select" id="tt-dept">
+            <option value="Computer Science">Computer Science</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Mechanical">Mechanical</option>
+            <option value="Civil">Civil</option>
+            <option value="Business">Business</option>
+            <option value="Arts">Arts</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Day *</label>
+          <select class="form-select" id="tt-day">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Time *</label>
+          <input type="time" class="form-input" id="tt-start" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time *</label>
+          <input type="time" class="form-input" id="tt-end" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subject *</label>
+        <input type="text" class="form-input" id="tt-subject" placeholder="e.g. Data Structures" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Faculty Name</label>
+          <input type="text" class="form-input" id="tt-faculty" placeholder="Prof. Name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Room / Lab</label>
+          <input type="text" class="form-input" id="tt-room" placeholder="e.g. CS-101" />
+        </div>
+      </div>
+      <div id="tt-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-timetable')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Add Slot</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD FEE -->
+<div class="modal-overlay" id="modal-admin-fee">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-indian-rupee-sign" style="color:var(--accent)"></i> Add Fee Record</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-admin-fee')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-admin-fee">
+      <div class="form-group"><label class="form-label">Fee Title *</label><input type="text" class="form-input" id="af-title" placeholder="e.g. Semester 4 Tuition Fee" required /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount (₹) *</label><input type="number" class="form-input" id="af-amount" placeholder="45000" required /></div>
+        <div class="form-group"><label class="form-label">Due Date</label><input type="datetime-local" class="form-input" id="af-due" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Assign To</label>
+        <select class="form-select" id="af-user"><option value="">All Students</option></select>
+      </div>
+      <div id="af-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-admin-fee')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Add</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: POST ANNOUNCEMENT -->
+<div class="modal-overlay" id="modal-admin-ann">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-bullhorn" style="color:var(--accent)"></i> Post Announcement</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-admin-ann')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-admin-ann">
+      <div class="form-group"><label class="form-label">Title *</label><input type="text" class="form-input" id="aa-title" required /></div>
+      <div class="form-group"><label class="form-label">Content *</label><textarea class="form-input" id="aa-content" rows="3" required></textarea></div>
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-select" id="aa-priority"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="info">Info</option></select>
+      </div>
+      <div id="aa-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-admin-ann')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i><span class="btn-text"> Post</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD FAQ -->
+<div class="modal-overlay" id="modal-admin-faq">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-circle-question" style="color:var(--accent)"></i> Add FAQ</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-admin-faq')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-admin-faq">
+      <div class="form-group"><label class="form-label">Question *</label><input type="text" class="form-input" id="aq-q" required /></div>
+      <div class="form-group"><label class="form-label">Answer *</label><textarea class="form-input" id="aq-a" rows="3" required></textarea></div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-select" id="aq-cat">
+          <option value="general">General</option><option value="academic">Academic</option>
+          <option value="fees">Fees</option><option value="hostel">Hostel</option><option value="placements">Placements</option>
+        </select>
+      </div>
+      <div id="aq-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-admin-faq')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Add</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: RESPOND TICKET -->
+<div class="modal-overlay" id="modal-admin-respond">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-reply" style="color:var(--accent)"></i> Respond to Ticket</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-admin-respond')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="admin-respond-info" style="background:var(--bg-primary);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);font-size:.875rem;color:var(--text-secondary)"></div>
+    <div class="form-group"><label class="form-label">Response *</label><textarea class="form-input" id="admin-respond-text" rows="4" placeholder="Write your response..."></textarea></div>
+    <div class="form-group"><label class="form-label">Update Status</label>
+      <select class="form-select" id="admin-respond-status">
+        <option value="in_progress">In Progress</option><option value="resolved">Resolved</option><option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-admin-respond')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAdminResponse()"><i class="fa-solid fa-check"></i><span class="btn-text"> Send</span></button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+'use strict';
+let allUsers = [], allEvents = [], allAssignments = [];
+
+function setText(id, v) { const e = document.getElementById(id); if(e) e.textContent = v; }
+
+async function apiFetch(url, opts) {
+  const r = await fetch(url, opts);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+  return d;
+}
+
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-item[data-tab]').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name)?.classList.add('active');
+  document.querySelector('[data-tab="' + name + '"]')?.classList.add('active');
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+async function loadStats() {
+  try {
+    const d = await apiFetch('/api/admin/stats');
+    setText('s-users', d.total_users); setText('s-students', d.total_students);
+    setText('s-faculty', d.total_faculty); setText('s-msgs', d.total_messages);
+    setText('s-events', d.total_events);
+    setText('nav-users-count', d.total_users);
+    setText('nav-events-count', d.total_events);
+    setText('nav-assign-count', d.total_assignments || 0);
+  } catch(err) { console.error('stats:', err); CampusBot.showToast('Stats: ' + err.message, 'error'); }
+}
+
+// ── USERS ──
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  try {
+    allUsers = await apiFetch('/api/admin/users');
+    renderUsers(allUsers);
+    // populate ALL student dropdowns (assignments + fees)
+    ['as-user', 'af-user'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.innerHTML = '<option value="">— All Students —</option>';
+      allUsers.filter(u => u.role === 'student').forEach(u => {
+        sel.innerHTML += `<option value="${u.id}">${u.name} (${u.email})</option>`;
+      });
+    });
+  } catch(err) {
+    console.error('users:', err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="table-loading" style="color:var(--red)">${err.message}</td></tr>`;
+  }
+}
+
+function renderUsers(users) {
+  const tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  document.getElementById('check-all-users').checked = false;
+  updateBulkBtn('users', []);
+  const rc = { student:'badge-blue', faculty:'badge-purple', admin:'badge-red' };
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="table-loading">No users yet.</td></tr>'; return; }
+  tbody.innerHTML = users.map((u, i) => `
+    <tr>
+      <td>${u.role !== 'admin' ? `<input type="checkbox" class="bulk-checkbox row-check-users" data-id="${u.id}" onchange="onCheck('users')">` : ''}</td>
+      <td class="text-muted" style="font-size:.78rem">${i+1}</td>
+      <td><div class="user-cell"><div class="user-cell-avatar">${u.name[0].toUpperCase()}</div><span style="font-weight:500">${u.name}</span></div></td>
+      <td class="text-secondary">${u.email}</td>
+      <td><span class="badge ${rc[u.role]||'badge-blue'}">${u.role}</span></td>
+      <td class="text-secondary">${u.department||'—'}</td>
+      <td class="text-muted" style="font-size:.78rem">${u.created_at}</td>
+      <td>${u.role !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteSingle('users',${u.id},'${u.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash-can"></i></button>` : '—'}</td>
+    </tr>`).join('');
+}
+
+function filterUsers(q) {
+  q = q.toLowerCase();
+  renderUsers(allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.role.includes(q)));
+}
+
+// ── EVENTS ──
+async function loadEvents() {
+  const tbody = document.getElementById('events-tbody');
+  try {
+    allEvents = await apiFetch('/api/events');
+    setText('nav-events-count', allEvents.length);
+    document.getElementById('check-all-events').checked = false;
+    updateBulkBtn('events', []);
+    if (!tbody) return;
+    if (!allEvents.length) { tbody.innerHTML = '<tr><td colspan="6" class="table-loading">No events yet. Click "New Event".</td></tr>'; return; }
+    const tc = { academic:'badge-blue', cultural:'badge-purple', sports:'badge-green', seminar:'badge-cyan' };
+    tbody.innerHTML = allEvents.map(e => `
+      <tr>
+        <td><input type="checkbox" class="bulk-checkbox row-check-events" data-id="${e.id}" onchange="onCheck('events')"></td>
+        <td style="font-weight:500">${e.title}</td>
+        <td><span class="badge ${tc[e.type]||'badge-blue'}">${e.type}</span></td>
+        <td class="text-secondary" style="font-size:.82rem">${e.date}</td>
+        <td class="text-muted" style="font-size:.82rem">${e.location||'—'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteSingle('events',${e.id},'${e.title.replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash-can"></i></button></td>
+      </tr>`).join('');
+  } catch(err) {
+    console.error('events:', err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="table-loading" style="color:var(--red)">${err.message}</td></tr>`;
+  }
+}
+
+// ── ASSIGNMENTS ──
+async function loadAssignments() {
+  const tbody = document.getElementById('assignments-tbody');
+  try {
+    allAssignments = await apiFetch('/api/admin/assignments');
+    setText('nav-assign-count', allAssignments.length);
+    document.getElementById('check-all-assignments').checked = false;
+    updateBulkBtn('assignments', []);
+    if (!tbody) return;
+    if (!allAssignments.length) { tbody.innerHTML = '<tr><td colspan="7" class="table-loading">No assignments yet. Click "Add Assignment".</td></tr>'; return; }
+    const sc = { pending:'badge-orange', submitted:'badge-green', graded:'badge-blue' };
+    tbody.innerHTML = allAssignments.map(a => `
+      <tr>
+        <td><input type="checkbox" class="bulk-checkbox row-check-assignments" data-id="${a.id}" onchange="onCheck('assignments')"></td>
+        <td style="font-weight:500">${a.title}</td>
+        <td class="text-secondary">${a.subject||'—'}</td>
+        <td class="text-secondary">${a.user_name}</td>
+        <td class="text-muted" style="font-size:.82rem">${a.due_date||'—'}</td>
+        <td><span class="badge ${sc[a.status]||'badge-blue'}">${a.status}</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteSingle('assignments',${a.id})"><i class="fa-solid fa-trash-can"></i></button></td>
+      </tr>`).join('');
+  } catch(err) {
+    console.error('assignments:', err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="table-loading" style="color:var(--red)">${err.message}</td></tr>`;
+  }
+}
+
+// ── BULK SELECT ──
+function getChecked(entity) {
+  return [...document.querySelectorAll(`.row-check-${entity}:checked`)].map(c => parseInt(c.dataset.id));
+}
+
+function onCheck(entity) {
+  const ids = getChecked(entity);
+  updateBulkBtn(entity, ids);
+  const all = document.querySelectorAll(`.row-check-${entity}`);
+  const hdr = document.getElementById(`check-all-${entity}`);
+  if (hdr && all.length) {
+    hdr.indeterminate = ids.length > 0 && ids.length < all.length;
+    hdr.checked = ids.length > 0 && ids.length === all.length;
+  }
+}
+
+function toggleAll(entity, master) {
+  document.querySelectorAll(`.row-check-${entity}`).forEach(c => c.checked = master.checked);
+  onCheck(entity);
+}
+
+function updateBulkBtn(entity, ids) {
+  const btn = document.getElementById(`bulk-delete-${entity}`);
+  const cnt = document.getElementById(`${entity}-sel-count`);
+  if (!btn) return;
+  btn.style.display = ids.length > 0 ? 'inline-flex' : 'none';
+  if (cnt) cnt.textContent = ids.length;
+}
+
+async function bulkDelete(entity) {
+  const ids = getChecked(entity);
+  if (!ids.length) return;
+  const label = { users:'user(s)', events:'event(s)', assignments:'assignment(s)' }[entity];
+  if (!confirm(`Delete ${ids.length} selected ${label}? This cannot be undone.`)) return;
+  try {
+    const d = await apiFetch('/api/admin/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity, ids })
+    });
+    CampusBot.showToast(`${d.deleted} ${label} deleted`, 'success');
+    loadAll();
+  } catch(err) { CampusBot.showToast('Error: ' + err.message, 'error'); }
+}
+
+async function deleteSingle(entity, id, name) {
+  const label = name ? `"${name}"` : 'this item';
+  if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
+  try {
+    if (entity === 'users')       await apiFetch(`/api/admin/users/${id}`, { method:'DELETE' });
+    else if (entity === 'events') await apiFetch(`/api/events/${id}`, { method:'DELETE' });
+    else                          await apiFetch(`/api/admin/assignments/${id}`, { method:'DELETE' });
+    CampusBot.showToast('Deleted successfully', 'success');
+    loadAll();
+  } catch(err) { CampusBot.showToast('Error: ' + err.message, 'error'); }
+}
+
+// ── FORMS ──
+document.getElementById('form-event').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  const alertEl = document.getElementById('ev-alert');
+  alertEl.innerHTML = ''; btn.classList.add('loading');
+  try {
+    await apiFetch('/api/events', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:       document.getElementById('ev-title').value.trim(),
+        description: document.getElementById('ev-desc').value.trim(),
+        type:        document.getElementById('ev-type').value,
+        date:        document.getElementById('ev-date').value,
+        location:    document.getElementById('ev-location').value.trim()
+      })
+    });
+    CampusBot.closeModal('modal-event');
+    CampusBot.showToast('Event created! All users notified.', 'success');
+    e.target.reset(); loadAll();
+  } catch(err) {
+    alertEl.innerHTML = `<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> ${err.message}</div>`;
+  }
+  btn.classList.remove('loading');
+});
+
+document.getElementById('form-assignment').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  const alertEl = document.getElementById('as-alert');
+  alertEl.innerHTML = ''; btn.classList.add('loading');
+  try {
+    const uid = document.getElementById('as-user').value;
+    const d = await apiFetch('/api/admin/assignments', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:    document.getElementById('as-title').value.trim(),
+        subject:  document.getElementById('as-subject').value.trim(),
+        due_date: document.getElementById('as-due').value || null,
+        user_id:  uid ? parseInt(uid) : null
+      })
+    });
+    CampusBot.closeModal('modal-assignment');
+    CampusBot.showToast(`Assignment added for ${d.created} student(s). Students notified!`, 'success');
+    e.target.reset(); loadAll();
+  } catch(err) {
+    alertEl.innerHTML = `<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> ${err.message}</div>`;
+  }
+  btn.classList.remove('loading');
+});
+
+// ── FEES (admin) ──
+async function loadAdminFees() {
+  const tbody = document.getElementById('fees-tbody');
+  if (!tbody) return;
+  try {
+    const data = await apiFetch('/api/admin/fees');
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" class="table-loading">No fee records yet.</td></tr>'; return; }
+    const sc = { pending:'badge-orange', paid:'badge-green', overdue:'badge-red' };
+    tbody.innerHTML = data.map(f => `<tr>
+      <td style="font-weight:500">${f.title}</td>
+      <td class="text-secondary">${f.user_name}</td>
+      <td style="font-weight:600">₹${f.amount.toLocaleString()}</td>
+      <td class="text-muted" style="font-size:.82rem">${f.due_date||'—'}</td>
+      <td><span class="badge ${sc[f.status]||'badge-gray'}">${f.status}</span></td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" class="table-loading" style="color:var(--red)">${e.message}</td></tr>`; }
+}
+
+document.getElementById('form-admin-fee')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  try {
+    const uid = document.getElementById('af-user').value;
+    const d = await apiFetch('/api/admin/fees', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ title: document.getElementById('af-title').value.trim(), amount: document.getElementById('af-amount').value, due_date: document.getElementById('af-due').value||null, user_id: uid?parseInt(uid):null })
+    });
+    CampusBot.closeModal('modal-admin-fee');
+    CampusBot.showToast(`Fee added for ${d.created} student(s)`, 'success');
+    e.target.reset(); loadAdminFees();
+  } catch(err) { document.getElementById('af-alert').innerHTML = `<div class="alert alert-error">${err.message}</div>`; }
+  btn.classList.remove('loading');
+});
+
+// ── ANNOUNCEMENTS (admin) ──
+async function loadAdminAnnouncements() {
+  const list = document.getElementById('admin-ann-list');
+  if (!list) return;
+  try {
+    const data = await apiFetch('/api/announcements');
+    if (!data.length) { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-bullhorn"></i><p>No announcements yet.</p></div>'; return; }
+    const pc = { urgent:'#fff5f5', normal:'#fff', info:'#eff6ff' };
+    const lc = { urgent:'var(--red)', normal:'var(--accent)', info:'#2563eb' };
+    list.innerHTML = data.map(a => `
+      <div style="background:${pc[a.priority]||'#fff'};border:1px solid var(--border);border-left:4px solid ${lc[a.priority]||'var(--accent)'};border-radius:var(--radius-lg);padding:var(--space-lg);display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-md)">
+        <div><div style="font-weight:600;margin-bottom:4px">${a.title}</div><div style="font-size:.82rem;color:var(--text-secondary)">${a.content}</div><div style="font-size:.72rem;color:var(--text-muted);margin-top:6px">${a.created_at}</div></div>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteAnnAdmin(${a.id})"><i class="fa-solid fa-trash-can" style="color:var(--red)"></i></button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = `<div class="empty-state" style="color:var(--red)">${e.message}</div>`; }
+}
+
+async function deleteAnnAdmin(id) {
+  if (!confirm('Delete this announcement?')) return;
+  await apiFetch(`/api/announcements/${id}`, { method:'DELETE' });
+  CampusBot.showToast('Deleted', 'success'); loadAdminAnnouncements();
+}
+
+document.getElementById('form-admin-ann')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  try {
+    await apiFetch('/api/announcements', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title: document.getElementById('aa-title').value.trim(), content: document.getElementById('aa-content').value.trim(), priority: document.getElementById('aa-priority').value }) });
+    CampusBot.closeModal('modal-admin-ann'); CampusBot.showToast('Announcement posted!', 'success'); e.target.reset(); loadAdminAnnouncements();
+  } catch(err) { document.getElementById('aa-alert').innerHTML = `<div class="alert alert-error">${err.message}</div>`; }
+  btn.classList.remove('loading');
+});
+
+// ── TICKETS (admin) ──
+let currentAdminTicketId = null;
+async function loadAdminTickets() {
+  const tbody = document.getElementById('tickets-tbody');
+  if (!tbody) return;
+  try {
+    const data = await apiFetch('/api/tickets');
+    setText('nav-tickets-count', data.filter(t => t.status === 'open').length);
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="table-loading">No tickets yet.</td></tr>'; return; }
+    const sc = { open:'badge-orange', in_progress:'badge-blue', resolved:'badge-green', closed:'badge-gray' };
+    const cc = { academic:'badge-purple', fees:'badge-orange', hostel:'badge-cyan', technical:'badge-red', general:'badge-gray' };
+    tbody.innerHTML = data.map(t => `<tr>
+      <td class="text-muted" style="font-size:.78rem">#${t.id}</td>
+      <td style="font-weight:500">${t.user_name}</td>
+      <td>${t.title}</td>
+      <td><span class="badge ${cc[t.category]||'badge-gray'}">${t.category}</span></td>
+      <td><span class="badge ${t.priority==='urgent'?'badge-red':'badge-gray'}">${t.priority}</span></td>
+      <td><span class="badge ${sc[t.status]||'badge-gray'}">${t.status.replace('_',' ')}</span></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="openAdminRespond(${t.id},'${t.title.replace(/'/g,"\\'")}','${(t.description||'').replace(/'/g,"\\'").substring(0,60)}')"><i class="fa-solid fa-reply"></i></button></td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="7" class="table-loading" style="color:var(--red)">${e.message}</td></tr>`; }
+}
+
+function openAdminRespond(id, title, desc) {
+  currentAdminTicketId = id;
+  document.getElementById('admin-respond-info').innerHTML = `<strong>${title}</strong><br>${desc}`;
+  CampusBot.openModal('modal-admin-respond');
+}
+
+async function submitAdminResponse() {
+  const btn = document.querySelector('#modal-admin-respond .btn-primary');
+  btn.classList.add('loading');
+  try {
+    await apiFetch(`/api/tickets/${currentAdminTicketId}/respond`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ response: document.getElementById('admin-respond-text').value, status: document.getElementById('admin-respond-status').value }) });
+    CampusBot.closeModal('modal-admin-respond'); CampusBot.showToast('Response sent!', 'success');
+    document.getElementById('admin-respond-text').value = ''; loadAdminTickets();
+  } catch(e) { CampusBot.showToast(e.message, 'error'); }
+  btn.classList.remove('loading');
+}
+
+// ── FAQs (admin) ──
+async function loadAdminFAQs() {
+  const list = document.getElementById('admin-faq-list');
+  if (!list) return;
+  try {
+    const data = await apiFetch('/api/faqs');
+    if (!data.length) { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-question"></i><p>No FAQs yet.</p></div>'; return; }
+    list.innerHTML = data.map(f => `
+      <div class="admin-card" style="padding:var(--space-md);margin-bottom:0;display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-md)">
+        <div style="flex:1"><div style="font-weight:600;font-size:.875rem;margin-bottom:4px"><i class="fa-solid fa-circle-question" style="color:var(--accent)"></i> ${f.question}</div><div style="font-size:.82rem;color:var(--text-secondary)">${f.answer}</div><span class="badge badge-gray" style="margin-top:6px">${f.category}</span></div>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteFAQAdmin(${f.id})"><i class="fa-solid fa-trash-can" style="color:var(--red)"></i></button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = `<div class="empty-state" style="color:var(--red)">${e.message}</div>`; }
+}
+
+async function deleteFAQAdmin(id) {
+  if (!confirm('Delete this FAQ?')) return;
+  await apiFetch(`/api/faqs/${id}`, { method:'DELETE' });
+  CampusBot.showToast('Deleted', 'success'); loadAdminFAQs();
+}
+
+document.getElementById('form-admin-faq')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  try {
+    await apiFetch('/api/faqs', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: document.getElementById('aq-q').value.trim(), answer: document.getElementById('aq-a').value.trim(), category: document.getElementById('aq-cat').value }) });
+    CampusBot.closeModal('modal-admin-faq'); CampusBot.showToast('FAQ added', 'success'); e.target.reset(); loadAdminFAQs();
+  } catch(err) { document.getElementById('aq-alert').innerHTML = `<div class="alert alert-error">${err.message}</div>`; }
+  btn.classList.remove('loading');
+});
+
+// ── TIMETABLE (admin) ──
+const TT_PALETTE = [
+  { bg:'#eff6ff', border:'#bfdbfe', text:'#1d4ed8' },
+  { bg:'#f0fdf4', border:'#bbf7d0', text:'#15803d' },
+  { bg:'#faf5ff', border:'#ddd6fe', text:'#6d28d9' },
+  { bg:'#fffbeb', border:'#fde68a', text:'#b45309' },
+  { bg:'#fff5f5', border:'#fecaca', text:'#b91c1c' },
+  { bg:'#ecfeff', border:'#a5f3fc', text:'#0e7490' },
+];
+let allTTEntries = [], activeTTDay = 'Monday';
+
+document.querySelectorAll('[data-aday]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-aday]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    activeTTDay = b.dataset.aday;
+    renderAdminTTDay(activeTTDay);
+  });
+});
+
+async function loadAdminTimetable() {
+  const dept = document.getElementById('tt-dept-filter')?.value || '';
+  const container = document.getElementById('admin-tt-container');
+  if (!container) return;
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-md)">${Array(4).fill('<div class="skeleton" style="height:100px;border-radius:12px"></div>').join('')}</div>`;
+  try {
+    const r = await apiFetch('/api/timetable?department=' + encodeURIComponent(dept));
+    allTTEntries = r;
+    renderAdminTTDay(activeTTDay);
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function renderAdminTTDay(day) {
+  activeTTDay = day;
+  document.querySelectorAll('[data-aday]').forEach(b => b.classList.toggle('active', b.dataset.aday === day));
+  const entries = allTTEntries.filter(e => e.day === day).sort((a,b) => a.time_start.localeCompare(b.time_start));
+  const container = document.getElementById('admin-tt-container');
+  if (!container) return;
+  if (!entries.length) {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No slots for ${day}. Click <strong>Add Slot</strong> to create one.</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-md)">${
+    entries.map((e, i) => {
+      const p = TT_PALETTE[i % TT_PALETTE.length];
+      return `<div style="background:${p.bg};border:1px solid ${p.border};border-left:4px solid ${p.border};border-radius:var(--radius-lg);padding:var(--space-lg);position:relative;box-shadow:var(--shadow-sm)">
+        <div style="font-size:.72rem;font-weight:800;color:${p.text};margin-bottom:6px;display:flex;align-items:center;gap:5px">
+          <i class="fa-regular fa-clock"></i> ${e.time_start} – ${e.time_end}
+        </div>
+        <div style="font-size:.95rem;font-weight:700;color:var(--text-primary);margin-bottom:6px">${e.subject}</div>
+        <div style="font-size:.75rem;color:var(--text-secondary);display:flex;flex-direction:column;gap:3px">
+          ${e.faculty ? `<span><i class="fa-solid fa-chalkboard-user" style="width:12px"></i> ${e.faculty}</span>` : ''}
+          ${e.room    ? `<span><i class="fa-solid fa-door-open" style="width:12px"></i> ${e.room}</span>` : ''}
+          <span><i class="fa-solid fa-building" style="width:12px"></i> ${e.department}</span>
+        </div>
+        <button onclick="deleteAdminTTSlot(${e.id})" style="position:absolute;top:8px;right:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.15);border-radius:6px;color:var(--red);cursor:pointer;padding:4px 8px;font-size:.72rem;opacity:0;transition:opacity .15s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+async function deleteAdminTTSlot(id) {
+  if (!confirm('Delete this timetable slot?')) return;
+  await apiFetch('/api/timetable/' + id, { method: 'DELETE' });
+  CampusBot.showToast('Slot deleted', 'success');
+  loadAdminTimetable();
+}
+
+document.getElementById('form-admin-tt')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  const alertEl = document.getElementById('tt-alert');
+  alertEl.innerHTML = '';
+  try {
+    await apiFetch('/api/timetable', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        department: document.getElementById('tt-dept').value,
+        day:        document.getElementById('tt-day').value,
+        time_start: document.getElementById('tt-start').value,
+        time_end:   document.getElementById('tt-end').value,
+        subject:    document.getElementById('tt-subject').value.trim(),
+        faculty:    document.getElementById('tt-faculty').value.trim(),
+        room:       document.getElementById('tt-room').value.trim()
+      })
+    });
+    CampusBot.closeModal('modal-timetable');
+    CampusBot.showToast('Timetable slot added!', 'success');
+    e.target.reset();
+    loadAdminTimetable();
+  } catch(err) {
+    alertEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+  }
+  btn.classList.remove('loading');
+});
+
+// ── ANALYTICS ──
+async function loadAnalytics() {
+  const chart  = document.getElementById('analytics-chart');
+  const recent = document.getElementById('analytics-recent');
+  if (!chart || !recent) return;
+  try {
+    const d = await apiFetch('/api/admin/query-analytics');
+    if (!d.by_category || !d.by_category.length) {
+      chart.innerHTML = '<div class="empty-state"><i class="fa-solid fa-chart-bar"></i><p>No queries logged yet. Start chatting!</p></div>';
+    } else {
+      const max = d.by_category[0].count;
+      chart.innerHTML = d.by_category.map(c => `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px">
+            <span style="font-weight:600;text-transform:capitalize">${c.category}</span>
+            <span class="badge badge-blue">${c.count}</span>
+          </div>
+          <div style="height:7px;background:var(--border);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${Math.round((c.count/max)*100)}%;background:var(--grad-primary);border-radius:99px;transition:width 1s ease"></div>
+          </div>
+        </div>`).join('');
+    }
+    setText('s-msgs', d.total || 0);
+    recent.innerHTML = d.recent && d.recent.length
+      ? d.recent.map(r => `
+          <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.82rem">
+            <div style="color:var(--text-primary);font-weight:500">${r.query}</div>
+            <div style="color:var(--text-muted);font-size:.72rem;margin-top:2px">
+              <span class="badge badge-gray">${r.category||'other'}</span> &middot; ${r.created_at}
+            </div>
+          </div>`).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i><p>No recent queries</p></div>';
+  } catch(e) {
+    chart.innerHTML  = `<div class="empty-state" style="color:var(--red)">Error: ${e.message}</div>`;
+    recent.innerHTML = '';
+  }
+}
+
+// ── MASTER LOAD ALL ──
+async function loadAll() {
+  await Promise.all([
+    loadStats(),
+    loadUsers(),
+    loadEvents(),
+    loadAssignments(),
+    loadAdminFees(),
+    loadAdminAnnouncements(),
+    loadAdminTickets(),
+    loadAdminFAQs(),
+    loadAdminTimetable()
+  ]);
+}
+
+// ── INIT ──
+loadAll();
+loadAnalytics();
+</script>
+{% endblock %}

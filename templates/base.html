@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}CampusBot{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle' font-size='18' font-family='sans-serif' fill='white'>C</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/features.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}" />
+  {% block extra_css %}{% endblock %}
+  <script>
+    // Apply saved theme before render to avoid flash
+    (function(){
+      const t = localStorage.getItem('cb-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+<div class="bg-blobs">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+<div id="toast-container"></div>
+
+{% if show_navbar is not defined or show_navbar %}
+<nav class="navbar" id="navbar">
+
+  <a href="/" class="nav-brand">
+    <div class="nav-brand-icon">
+      <i class="fa-solid fa-graduation-cap"></i>
+    </div>
+    <span>CampusBot</span>
+  </a>
+
+  {% if session.get('user_id') %}
+  <ul class="nav-links">
+    {% if session.get('user_role') == 'parent' %}
+    <li><a href="/parent" class="{% if request.endpoint == 'parent_portal' %}active{% endif %}">
+      <i class="fa-solid fa-house-user"></i> Parent Portal
+    </a></li>
+    <li><a href="/chat" class="{% if request.endpoint == 'chat' %}active{% endif %}">
+      <i class="fa-solid fa-robot"></i> AI Chat
+    </a></li>
+    {% else %}
+    <li><a href="/dashboard" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+      <i class="fa-solid fa-table-columns"></i> Dashboard
+    </a></li>
+    <li><a href="/chat" class="{% if request.endpoint == 'chat' %}active{% endif %}">
+      <i class="fa-solid fa-robot"></i> AI Chat
+    </a></li>
+    <li><a href="/events" class="{% if request.endpoint == 'events' %}active{% endif %}">
+      <i class="fa-solid fa-calendar-days"></i> Events
+    </a></li>
+    {% if session.get('user_role') == 'admin' %}
+    <li><a href="/admin" class="{% if request.endpoint == 'admin' %}active{% endif %}">
+      <i class="fa-solid fa-shield-halved"></i> Admin
+    </a></li>
+    {% endif %}
+    {% endif %}
+  </ul>
+
+  <div class="nav-actions">
+    <div style="position:relative">
+      <button class="notif-btn" id="notif-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-badge" id="notif-count" style="display:none">0</span>
+      </button>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-header">
+          <h4>Notifications</h4>
+          <button id="mark-all-read" class="btn btn-ghost btn-sm">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-loading">Loading...</div>
+        </div>
+        <div class="notif-footer"><a href="#">View all</a></div>
+      </div>
+    </div>
+
+    <button class="notif-btn" id="theme-toggle" title="Toggle Dark/Light Mode" style="font-size:1rem">
+      <i class="fa-solid fa-moon" id="theme-icon"></i>
+    </button>
+
+    <div style="position:relative">
+      <div class="profile-btn" id="profile-btn">
+        <div class="profile-avatar">
+          <span>{{ session.get('user_name', 'U')[0].upper() }}</span>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name">{{ session.get('user_name', 'User').split()[0] }}</div>
+          <div class="profile-role">{{ session.get('user_role', 'student').title() }}</div>
+        </div>
+        <i class="fa-solid fa-chevron-down" style="font-size:.65rem;color:var(--text-muted)"></i>
+      </div>
+      <div class="profile-dropdown" id="profile-dropdown">
+        <div class="profile-dropdown-header">
+          <div class="name">{{ session.get('user_name', 'User') }}</div>
+          <div class="email">{{ session.get('user_role', 'student').title() }}</div>
+        </div>
+        <a href="/dashboard" class="profile-dropdown-item">
+          <i class="fa-solid fa-user"></i> My Profile
+        </a>
+        <a href="/chat" class="profile-dropdown-item">
+          <i class="fa-solid fa-robot"></i> AI Assistant
+        </a>
+        <a href="/timetable" class="profile-dropdown-item">
+          <i class="fa-solid fa-clock"></i> Timetable
+        </a>
+        <a href="/attendance" class="profile-dropdown-item">
+          <i class="fa-solid fa-clipboard-check"></i> Attendance
+        </a>
+        <a href="/placements" class="profile-dropdown-item">
+          <i class="fa-solid fa-briefcase"></i> Placements
+        </a>
+        <a href="/fees" class="profile-dropdown-item">
+          <i class="fa-solid fa-indian-rupee-sign"></i> Fees
+        </a>
+        <a href="/announcements" class="profile-dropdown-item">
+          <i class="fa-solid fa-bullhorn"></i> Announcements
+        </a>
+        <a href="/faq" class="profile-dropdown-item">
+          <i class="fa-solid fa-circle-question"></i> FAQ
+        </a>
+        <a href="/tickets" class="profile-dropdown-item">
+          <i class="fa-solid fa-ticket"></i> Support Tickets
+        </a>
+        <div class="profile-dropdown-divider"></div>
+        <button class="profile-dropdown-item danger" data-action="logout">
+          <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-hamburger" id="nav-hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="nav-mobile" id="nav-mobile">
+    {% if session.get('user_role') == 'parent' %}
+    <a href="/parent"><i class="fa-solid fa-house-user"></i> Parent Portal</a>
+    <a href="/chat"><i class="fa-solid fa-robot"></i> AI Chat</a>
+    {% else %}
+    <a href="/dashboard"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+    <a href="/chat"><i class="fa-solid fa-robot"></i> AI Chat</a>
+    <a href="/events"><i class="fa-solid fa-calendar-days"></i> Events</a>
+    <a href="/timetable"><i class="fa-solid fa-clock"></i> Timetable</a>
+    <a href="/attendance"><i class="fa-solid fa-clipboard-check"></i> Attendance</a>
+    <a href="/placements"><i class="fa-solid fa-briefcase"></i> Placements</a>
+    <a href="/fees"><i class="fa-solid fa-indian-rupee-sign"></i> Fees</a>
+    <a href="/announcements"><i class="fa-solid fa-bullhorn"></i> Announcements</a>
+    <a href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+    <a href="/tickets"><i class="fa-solid fa-ticket"></i> Tickets</a>
+    <a href="/cgpa"><i class="fa-solid fa-calculator"></i> CGPA Calc</a>
+    <a href="/profile"><i class="fa-solid fa-user"></i> My Profile</a>
+    {% if session.get('user_role') == 'admin' %}
+    <a href="/admin"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+    {% endif %}
+    {% endif %}
+    <a href="#" data-action="logout" style="color:var(--red)">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </a>
+  </div>
+
+  {% else %}
+  <ul class="nav-links">
+    <li><a href="/#features">Features</a></li>
+    <li><a href="/#how">How it works</a></li>
+    <li><a href="/#roles">Roles</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="notif-btn" id="theme-toggle" title="Toggle Dark/Light Mode" style="font-size:1rem">
+      <i class="fa-solid fa-moon" id="theme-icon"></i>
+    </button>
+    <a href="/login"    class="btn btn-ghost btn-sm">Sign In</a>
+    <a href="/register" class="btn btn-primary btn-sm">Get Started</a>
+    <div class="nav-hamburger" id="nav-hamburger"><span></span><span></span><span></span></div>
+  </div>
+  <div class="nav-mobile" id="nav-mobile">
+    <a href="/#features">Features</a>
+    <a href="/#how">How it works</a>
+    <a href="/#roles">Roles</a>
+    <a href="/login">Sign In</a>
+    <a href="/register">Get Started</a>
+  </div>
+  {% endif %}
+
+</nav>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

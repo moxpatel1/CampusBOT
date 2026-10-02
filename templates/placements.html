@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Placements — CampusBot{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+<div class="inner-page-layout">
+
+  <div class="inner-page-header">
+    <div>
+      <h2>Placement <span class="gradient-text">Portal</span></h2>
+      <p>Campus recruitment drives and career opportunities</p>
+    </div>
+    {% if session.get('user_role') in ['admin','faculty'] %}
+    <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-drive')">
+      <i class="fa-solid fa-plus"></i> Add Drive
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Filter chips -->
+  <div class="events-filters">
+    <button class="filter-chip active" data-filter="all">All</button>
+    <button class="filter-chip" data-filter="upcoming"><i class="fa-solid fa-clock"></i> Upcoming</button>
+    <button class="filter-chip" data-filter="ongoing"><i class="fa-solid fa-circle-play"></i> Ongoing</button>
+    <button class="filter-chip" data-filter="closed"><i class="fa-solid fa-circle-check"></i> Closed</button>
+  </div>
+
+  <div id="drives-grid" class="placement-grid">
+    <div class="skeleton" style="height:200px;border-radius:14px"></div>
+    <div class="skeleton" style="height:200px;border-radius:14px"></div>
+    <div class="skeleton" style="height:200px;border-radius:14px"></div>
+  </div>
+
+</div>
+</div>
+
+{% if session.get('user_role') in ['admin','faculty'] %}
+<div class="modal-overlay" id="modal-drive">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-briefcase" style="color:var(--accent)"></i> Add Placement Drive</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-drive')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-drive">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Company *</label>
+          <input type="text" class="form-input" id="dr-company" placeholder="e.g. Google" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role *</label>
+          <input type="text" class="form-input" id="dr-role" placeholder="e.g. Software Engineer" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Package (CTC)</label>
+          <input type="text" class="form-input" id="dr-package" placeholder="e.g. ₹12 LPA" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="dr-status">
+            <option value="upcoming">Upcoming</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Drive Date</label>
+          <input type="datetime-local" class="form-input" id="dr-date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Date to Apply</label>
+          <input type="datetime-local" class="form-input" id="dr-last" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Eligibility Criteria</label>
+        <input type="text" class="form-input" id="dr-eligibility" placeholder="e.g. CGPA ≥ 7.0, CS/IT branches" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="dr-desc" rows="2" placeholder="Job description, process details..."></textarea>
+      </div>
+      <div id="drive-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-drive')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Add Drive</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allDrives = [];
+
+async function loadDrives() {
+  try {
+    const r = await fetch('/api/placements');
+    allDrives = await r.json();
+    renderDrives(allDrives);
+  } catch {
+    document.getElementById('drives-grid').innerHTML = '<div class="empty-state full-width"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load drives</p></div>';
+  }
+}
+
+function renderDrives(drives) {
+  const grid = document.getElementById('drives-grid');
+  if (!drives.length) {
+    grid.innerHTML = '<div class="empty-state full-width"><i class="fa-solid fa-briefcase"></i><p>No placement drives yet</p></div>';
+    return;
+  }
+  const statusBadge = { upcoming:'badge-blue', ongoing:'badge-green', closed:'badge-gray' };
+  const statusIcon  = { upcoming:'fa-clock', ongoing:'fa-circle-play', closed:'fa-circle-check' };
+  grid.innerHTML = drives.map(d => `
+    <div class="placement-card glass-card">
+      <div class="placement-card-header">
+        <div class="placement-company-logo">${d.company[0].toUpperCase()}</div>
+        <div style="flex:1">
+          <div class="placement-company">${d.company}</div>
+          <div class="placement-role">${d.role}</div>
+        </div>
+        <span class="badge ${statusBadge[d.status]||'badge-gray'}">
+          <i class="fa-solid ${statusIcon[d.status]||'fa-circle'}"></i> ${d.status}
+        </span>
+      </div>
+      <div class="placement-details">
+        ${d.package    ? `<div class="placement-detail"><i class="fa-solid fa-indian-rupee-sign"></i> ${d.package}</div>` : ''}
+        ${d.drive_date ? `<div class="placement-detail"><i class="fa-solid fa-calendar-days"></i> Drive: ${d.drive_date}</div>` : ''}
+        ${d.last_date  ? `<div class="placement-detail"><i class="fa-solid fa-hourglass-end"></i> Apply by: ${d.last_date}</div>` : ''}
+        ${d.eligibility? `<div class="placement-detail"><i class="fa-solid fa-list-check"></i> ${d.eligibility}</div>` : ''}
+      </div>
+      ${d.description ? `<p style="font-size:.82rem;color:var(--text-secondary);margin:10px 0">${d.description}</p>` : ''}
+      <div class="placement-card-footer">
+        {% if session.get('user_role') == 'student' %}
+        ${d.registered
+          ? `<span class="badge badge-green"><i class="fa-solid fa-circle-check"></i> Registered</span>`
+          : d.status !== 'closed'
+            ? `<button class="btn btn-primary btn-sm" onclick="registerDrive(${d.id},this)"><i class="fa-solid fa-paper-plane"></i> Register</button>`
+            : `<span class="badge badge-gray">Closed</span>`
+        }
+        {% else %}
+        <button class="btn btn-danger btn-sm" onclick="deleteDrive(${d.id})"><i class="fa-solid fa-trash-can"></i> Delete</button>
+        {% endif %}
+      </div>
+    </div>
+  `).join('');
+}
+
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    const f = chip.dataset.filter;
+    renderDrives(f === 'all' ? allDrives : allDrives.filter(d => d.status === f));
+  });
+});
+
+async function registerDrive(id, btn) {
+  btn.classList.add('loading');
+  try {
+    const r = await fetch(`/api/placements/${id}/register`, { method: 'POST' });
+    const d = await r.json();
+    if (d.success) { CampusBot.showToast('Registered successfully!', 'success'); loadDrives(); }
+    else CampusBot.showToast(d.error, 'error');
+  } catch { CampusBot.showToast('Failed', 'error'); }
+  btn.classList.remove('loading');
+}
+
+async function deleteDrive(id) {
+  if (!confirm('Delete this placement drive?')) return;
+  await fetch(`/api/placements/${id}`, { method: 'DELETE' });
+  CampusBot.showToast('Drive deleted', 'success');
+  loadDrives();
+}
+
+document.getElementById('form-drive')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  const alertEl = document.getElementById('drive-alert');
+  alertEl.innerHTML = '';
+  try {
+    const r = await fetch('/api/placements', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        company:     document.getElementById('dr-company').value.trim(),
+        role:        document.getElementById('dr-role').value.trim(),
+        package:     document.getElementById('dr-package').value.trim(),
+        status:      document.getElementById('dr-status').value,
+        drive_date:  document.getElementById('dr-date').value || null,
+        last_date:   document.getElementById('dr-last').value || null,
+        eligibility: document.getElementById('dr-eligibility').value.trim(),
+        description: document.getElementById('dr-desc').value.trim()
+      })
+    });
+    const d = await r.json();
+    if (d.success) {
+      CampusBot.closeModal('modal-drive');
+      CampusBot.showToast('Drive added! Students notified.', 'success');
+      e.target.reset(); loadDrives();
+    } else { alertEl.innerHTML = `<div class="alert alert-error">${d.error}</div>`; }
+  } catch { alertEl.innerHTML = '<div class="alert alert-error">Failed</div>'; }
+  btn.classList.remove('loading');
+});
+
+loadDrives();
+</script>
+{% endblock %}

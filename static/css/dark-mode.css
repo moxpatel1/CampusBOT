@@ -1,0 +1,69 @@
+﻿/* ═══════════════════════════════════════════════
+   CAMPUSBOT — COMPLETE DARK MODE OVERRIDES
+   Covers all hard-coded colors across all CSS files
+═══════════════════════════════════════════════ */
+
+/* ── SMOOTH THEME TRANSITION ── */
+html[data-theme="dark"] * { transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease, box-shadow 0.2s ease; }
+
+/* ── NAVBAR ── */
+[data-theme="dark"] .navbar { background: rgba(13,15,26,0.92); }
+[data-theme="dark"] .navbar.scrolled { background: rgba(13,15,26,0.98); box-shadow: 0 2px 16px rgba(0,0,0,0.4); }
+[data-theme="dark"] .notif-dropdown { background: var(--bg-card); }
+[data-theme="dark"] .notif-item.unread { background: rgba(97,117,245,0.1); }
+[data-theme="dark"] .profile-dropdown { background: var(--bg-card); }
+[data-theme="dark"] .profile-dropdown-item.danger:hover { color: var(--red); background: rgba(220,38,38,0.12); }
+[data-theme="dark"] .nav-mobile { background: rgba(13,15,26,0.98); }
+
+/* ── SIDEBAR (dashboard) ── */
+[data-theme="dark"] .sidebar { background: var(--bg-card); box-shadow: 2px 0 8px rgba(0,0,0,0.3); }
+
+/* ── CHAT ── */
+[data-theme="dark"] .chat-sidebar { background: var(--bg-card); }
+[data-theme="dark"] .chat-header { background: var(--bg-card); }
+[data-theme="dark"] .message.bot .message-bubble { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .typing-dots { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .chat-input-area { background: var(--bg-card); }
+[data-theme="dark"] .chat-input-wrapper:focus-within { background: var(--bg-elevated); }
+[data-theme="dark"] .quick-reply-chip { background: var(--bg-card); }
+[data-theme="dark"] .quick-reply-chip:hover { background: var(--accent-light); }
+
+/* ── AUTH CARD ── */
+[data-theme="dark"] .auth-card { background: var(--bg-card); }
+
+/* ── FILTER & DAY CHIPS ── */
+[data-theme="dark"] .filter-chip { background: var(--bg-card); }
+[data-theme="dark"] .day-tab { background: var(--bg-card); }
+
+/* ── CTA CARD ── */
+[data-theme="dark"] .cta-card { background: linear-gradient(135deg, rgba(97,117,245,0.08), rgba(167,139,250,0.08)); border-color: rgba(97,117,245,0.2); }
+
+/* ── ADMIN ── */
+[data-theme="dark"] .admin-sidebar { background: var(--bg-card); box-shadow: 2px 0 8px rgba(0,0,0,0.3); }
+[data-theme="dark"] .admin-sidebar-header { background: linear-gradient(135deg, rgba(97,117,245,0.1), rgba(167,139,250,0.1)); }
+[data-theme="dark"] .admin-stat-card { background: var(--bg-card); }
+[data-theme="dark"] .admin-card { background: var(--bg-card); }
+[data-theme="dark"] .admin-nav-item.danger:hover { color: var(--red); background: rgba(220,38,38,0.12); }
+
+/* ── TABLE ── */
+[data-theme="dark"] .users-table th { background: var(--bg-secondary); }
+[data-theme="dark"] .users-table tr:hover td { background: var(--bg-card-hover); }
+
+/* ── ATTENDANCE WARNING ── */
+[data-theme="dark"] .att-warning { background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.3); color: #fca5a5; }
+
+/* ── BG BLOBS ── */
+[data-theme="dark"] .blob { opacity: 0.14; }
+
+/* ── NOTIF BADGE ── */
+[data-theme="dark"] .notif-badge { border-color: var(--bg-card); }
+
+/* ── SCROLLBARS ── */
+[data-theme="dark"] .chat-messages::-webkit-scrollbar-track,
+[data-theme="dark"] .notif-list::-webkit-scrollbar-track,
+[data-theme="dark"] .admin-sidebar::-webkit-scrollbar-track,
+[data-theme="dark"] .sidebar::-webkit-scrollbar-track { background: var(--bg-secondary); }
+[data-theme="dark"] .chat-messages::-webkit-scrollbar-thumb,
+[data-theme="dark"] .notif-list::-webkit-scrollbar-thumb,
+[data-theme="dark"] .admin-sidebar::-webkit-scrollbar-thumb,
+[data-theme="dark"] .sidebar::-webkit-scrollbar-thumb { background: var(--border); }

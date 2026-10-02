@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CampusBot{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Main</div>
+        <a href="/dashboard" class="sidebar-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+          <i class="fa-solid fa-table-columns"></i> Overview
+        </a>
+        <a href="/chat" class="sidebar-item {% if request.endpoint == 'chat' %}active{% endif %}">
+          <i class="fa-solid fa-robot"></i> AI Assistant
+        </a>
+        <a href="/events" class="sidebar-item {% if request.endpoint == 'events' %}active{% endif %}">
+          <i class="fa-solid fa-calendar-days"></i> Events
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Academic</div>
+        <a href="/timetable" class="sidebar-item {% if request.endpoint == 'timetable' %}active{% endif %}">
+          <i class="fa-solid fa-clock"></i> Timetable
+        </a>
+        <a href="/attendance" class="sidebar-item {% if request.endpoint == 'attendance' %}active{% endif %}">
+          <i class="fa-solid fa-clipboard-check"></i> Attendance
+        </a>
+        <a href="/cgpa" class="sidebar-item {% if request.endpoint == 'cgpa_calc' %}active{% endif %}">
+          <i class="fa-solid fa-calculator"></i> CGPA Calc
+        </a>
+        <a href="/dashboard" class="sidebar-item">
+          <i class="fa-solid fa-file-lines"></i> Assignments
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Campus</div>
+        <a href="/placements" class="sidebar-item {% if request.endpoint == 'placements' %}active{% endif %}">
+          <i class="fa-solid fa-briefcase"></i> Placements
+        </a>
+        <a href="/fees" class="sidebar-item {% if request.endpoint == 'fees' %}active{% endif %}">
+          <i class="fa-solid fa-indian-rupee-sign"></i> Fees
+        </a>
+        <a href="/announcements" class="sidebar-item {% if request.endpoint == 'announcements' %}active{% endif %}">
+          <i class="fa-solid fa-bullhorn"></i> Announcements
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Support</div>
+        <a href="/faq" class="sidebar-item {% if request.endpoint == 'faq' %}active{% endif %}">
+          <i class="fa-solid fa-circle-question"></i> FAQ
+        </a>
+        <a href="/tickets" class="sidebar-item {% if request.endpoint == 'tickets' %}active{% endif %}">
+          <i class="fa-solid fa-ticket"></i> Tickets
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account</div>
+        <a href="/profile" class="sidebar-item {% if request.endpoint == 'profile' %}active{% endif %}">
+          <i class="fa-solid fa-user"></i> My Profile
+        </a>
+        {% if session.get('user_role') == 'admin' %}
+        <a href="/admin" class="sidebar-item {% if request.endpoint == 'admin' %}active{% endif %}">
+          <i class="fa-solid fa-shield-halved"></i> Admin Panel
+        </a>
+        {% endif %}
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="divider"></div>
+        <button class="sidebar-item" data-action="logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span style="color:var(--red)">Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dashboard-main">
+
+      <div class="dashboard-header">
+        <div class="dashboard-greeting">
+          <h2>Good <span id="time-greeting">day</span>, <span class="gradient-text">{{ user.name.split()[0] }}</span></h2>
+          <p id="current-date"></p>
+        </div>
+        <div style="display:flex;gap:var(--space-sm)">
+          <a href="/chat" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-robot"></i>
+            <span class="btn-text">Ask AI</span>
+          </a>
+          <button class="btn btn-secondary btn-sm" onclick="refreshStats()" title="Refresh">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="glass-card stat-card">
+          <div class="icon-box icon-box-blue"><i class="fa-solid fa-robot"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-messages">—</div>
+            <div class="stat-label">AI Messages</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="icon-box icon-box-orange"><i class="fa-solid fa-file-lines"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-assignments">—</div>
+            <div class="stat-label">Pending Tasks</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="icon-box icon-box-cyan"><i class="fa-solid fa-calendar-days"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-events">—</div>
+            <div class="stat-label">Upcoming Events</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="icon-box icon-box-red"><i class="fa-solid fa-bell"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-notifs">—</div>
+            <div class="stat-label">Unread Alerts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div class="dashboard-grid">
+
+        <!-- Assignments -->
+        <div class="glass-card widget">
+          <div class="widget-header">
+            <div class="widget-title-group">
+              <div class="icon-box icon-box-sm icon-box-orange"><i class="fa-solid fa-file-lines"></i></div>
+              <span class="widget-title">Assignments</span>
+            </div>
+            <span class="badge badge-orange" id="pending-count"></span>
+          </div>
+          <div id="assignments-list"></div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="glass-card widget">
+          <div class="widget-header">
+            <div class="widget-title-group">
+              <div class="icon-box icon-box-sm icon-box-cyan"><i class="fa-solid fa-calendar-days"></i></div>
+              <span class="widget-title">Upcoming Events</span>
+            </div>
+            <a href="/events" class="btn btn-ghost btn-sm">View all</a>
+          </div>
+          <div id="events-list"></div>
+        </div>
+
+        <!-- Profile -->
+        <div class="glass-card widget full-width profile-widget">
+          <div class="profile-widget-avatar">
+            {{ user.name[0].upper() }}
+          </div>
+          <div class="profile-widget-info">
+            <h3>{{ user.name }}</h3>
+            <p>{{ user.department or 'No department set' }} &middot; {{ user.role.title() }}</p>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <span class="badge badge-blue">{{ user.role.title() }}</span>
+              <span class="badge badge-green">Active</span>
+              {% if user.department %}
+              <span class="badge badge-purple">{{ user.department }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="profile-widget-actions">
+            <a href="/chat" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-robot"></i> Ask AI
+            </a>
+            <a href="/timetable" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-clock"></i> Timetable
+            </a>
+            <a href="/placements" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-briefcase"></i> Placements
+            </a>
+            <a href="/profile" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-user"></i> Profile
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hour = new Date().getHours();
+document.getElementById('time-greeting').textContent = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+
+async function refreshStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    document.getElementById('stat-messages').textContent   = data.total_messages;
+    document.getElementById('stat-assignments').textContent = data.pending_assignments;
+    document.getElementById('stat-events').textContent     = data.upcoming_events;
+    document.getElementById('stat-notifs').textContent     = data.unread_notifications;
+    const pc = document.getElementById('pending-count');
+    pc.textContent = data.pending_assignments + ' pending';
+    pc.style.display = data.pending_assignments > 0 ? '' : 'none';
+  } catch {}
+}
+
+async function loadAssignments() {
+  const list = document.getElementById('assignments-list');
+  // show skeleton
+  list.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${Array(3).fill(`<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><div class="skeleton" style="width:32px;height:32px;border-radius:8px;flex-shrink:0"></div><div style="flex:1"><div class="skeleton skeleton-line medium" style="margin-bottom:6px"></div><div class="skeleton skeleton-line short"></div></div><div class="skeleton" style="width:60px;height:20px;border-radius:99px"></div></div>`).join('')}
+    </div>`;
+  try {
+    const res = await fetch('/api/assignments');
+    const data = await res.json();
+    if (!data.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>No pending assignments</p></div>';
+      return;
+    }
+    const statusColors = { pending: 'orange', submitted: 'green', graded: 'blue' };
+    list.innerHTML = data.map(a => `
+      <div class="list-item">
+        <div class="icon-box icon-box-sm icon-box-orange"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="list-item-info">
+          <div class="list-item-title">${a.title}</div>
+          <div class="list-item-meta">${a.subject || '—'} &middot; Due ${a.due_date || 'TBD'}</div>
+        </div>
+        <span class="badge badge-${statusColors[a.status] || 'blue'}">${a.status}</span>
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load</p></div>';
+  }
+}
+
+async function loadEvents() {
+  const list = document.getElementById('events-list');
+  list.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${Array(3).fill(`<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><div class="skeleton" style="width:32px;height:32px;border-radius:8px;flex-shrink:0"></div><div style="flex:1"><div class="skeleton skeleton-line medium" style="margin-bottom:6px"></div><div class="skeleton skeleton-line short"></div></div><div class="skeleton" style="width:60px;height:20px;border-radius:99px"></div></div>`).join('')}
+    </div>`;
+  try {
+    const res = await fetch('/api/events');
+    const data = await res.json();
+    if (!data.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No upcoming events</p></div>';
+      return;
+    }
+    const typeColors = { academic: 'blue', cultural: 'purple', sports: 'green', seminar: 'cyan' };
+    list.innerHTML = data.slice(0, 4).map(e => `
+      <div class="list-item">
+        <div class="icon-box icon-box-sm icon-box-cyan"><i class="fa-solid fa-calendar-days"></i></div>
+        <div class="list-item-info">
+          <div class="list-item-title">${e.title}</div>
+          <div class="list-item-meta">${e.date} &middot; ${e.location || 'TBD'}</div>
+        </div>
+        <span class="badge badge-${typeColors[e.type] || 'blue'}">${e.type}</span>
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load</p></div>';
+  }
+}
+
+refreshStats();
+loadAssignments();
+loadEvents();
+</script>
+{% endblock %}

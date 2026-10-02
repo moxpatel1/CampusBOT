@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}CampusBot — Smart Campus Platform{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      AI-Powered Campus Assistant
+    </div>
+    <h1>Your <span class="gradient-text">Smart Campus</span> Platform</h1>
+    <p>One place for AI chat, assignments, events, attendance, placements, fees, and more — built for students, faculty, and admins.</p>
+    <div class="hero-actions">
+      {% if session.get('user_id') %}
+        <a href="/dashboard" class="btn btn-primary btn-lg"><i class="fa-solid fa-table-columns"></i> Go to Dashboard</a>
+        <a href="/chat" class="btn btn-secondary btn-lg"><i class="fa-solid fa-robot"></i> Open AI Chat</a>
+      {% else %}
+        <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-user-plus"></i> Get Started Free</a>
+        <a href="/login" class="btn btn-secondary btn-lg">Sign In</a>
+      {% endif %}
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-value">24/7</div><div class="hero-stat-label">AI Available</div></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><div class="hero-stat-value">10+</div><div class="hero-stat-label">Features</div></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><div class="hero-stat-value">3</div><div class="hero-stat-label">Role Portals</div></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-mockup">
+      <div class="mockup-bar">
+        <span class="mockup-dot red"></span>
+        <span class="mockup-dot yellow"></span>
+        <span class="mockup-dot green"></span>
+        <span class="mockup-title">CampusBot AI</span>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-msg bot">
+          <div class="mockup-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div class="mockup-bubble">Hello! How can I help you today?</div>
+        </div>
+        <div class="mockup-msg user">
+          <div class="mockup-bubble user">When is the next exam?</div>
+        </div>
+        <div class="mockup-msg bot">
+          <div class="mockup-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div class="mockup-bubble">End-semester exams start June 10. Check your Timetable page for the full schedule.</div>
+        </div>
+        <div class="mockup-typing">
+          <div class="mockup-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="mockup-input">
+        <span>Ask anything about campus...</span>
+        <i class="fa-solid fa-paper-plane"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section" id="features">
+  <div class="section-header reveal">
+    <p class="section-label">What's inside</p>
+    <h2>Everything you need, <span class="gradient-text">nothing you don't</span></h2>
+  </div>
+  <div class="features-grid">
+    <div class="glass-card feature-card reveal">
+      <div class="feature-icon icon-box icon-box-blue"><i class="fa-solid fa-robot"></i></div>
+      <h3>AI Chatbot</h3>
+      <p>Ask about fees, exams, placements, library, hostel — get instant answers any time.</p>
+    </div>
+    <div class="glass-card feature-card reveal" style="transition-delay:.06s">
+      <div class="feature-icon icon-box icon-box-purple"><i class="fa-solid fa-table-columns"></i></div>
+      <h3>Dashboard</h3>
+      <p>Assignments, events, notifications, and stats — all in one clean view.</p>
+    </div>
+    <div class="glass-card feature-card reveal" style="transition-delay:.12s">
+      <div class="feature-icon icon-box icon-box-green"><i class="fa-solid fa-clipboard-check"></i></div>
+      <h3>Attendance</h3>
+      <p>Track your attendance per subject with warnings when you drop below 75%.</p>
+    </div>
+    <div class="glass-card feature-card reveal" style="transition-delay:.18s">
+      <div class="feature-icon icon-box icon-box-orange"><i class="fa-solid fa-briefcase"></i></div>
+      <h3>Placements</h3>
+      <p>View company drives, check eligibility, and register with one click.</p>
+    </div>
+    <div class="glass-card feature-card reveal" style="transition-delay:.24s">
+      <div class="feature-icon icon-box icon-box-cyan"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+      <h3>Fee Management</h3>
+      <p>See pending dues, payment history, and mark fees as paid.</p>
+    </div>
+    <div class="glass-card feature-card reveal" style="transition-delay:.30s">
+      <div class="feature-icon icon-box icon-box-red"><i class="fa-solid fa-ticket"></i></div>
+      <h3>Support Tickets</h3>
+      <p>Raise complaints, get responses from admin within 24 hours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROLES ── -->
+<section class="section" id="roles">
+  <div class="section-header reveal">
+    <p class="section-label">Who it's for</p>
+    <h2>One platform, <span class="gradient-text">three portals</span></h2>
+  </div>
+  <div class="roles-grid">
+    <div class="glass-card role-card reveal">
+      <div class="role-icon icon-box icon-box-lg icon-box-blue"><i class="fa-solid fa-user-graduate"></i></div>
+      <h3>Students</h3>
+      <p>Assignments, attendance, timetable, fees, placements, CGPA calculator, and AI chat — everything academic in one place.</p>
+      {% if not session.get('user_id') %}<a href="/register" class="btn btn-ghost btn-sm" style="margin-top:var(--space-md)">Join as Student <i class="fa-solid fa-arrow-right"></i></a>{% endif %}
+    </div>
+    <div class="glass-card role-card reveal" style="transition-delay:.08s">
+      <div class="role-icon icon-box icon-box-lg icon-box-purple"><i class="fa-solid fa-chalkboard-user"></i></div>
+      <h3>Faculty</h3>
+      <p>Post assignments, mark attendance, create events, manage FAQs, and respond to student tickets.</p>
+      {% if not session.get('user_id') %}<a href="/register" class="btn btn-ghost btn-sm" style="margin-top:var(--space-md)">Join as Faculty <i class="fa-solid fa-arrow-right"></i></a>{% endif %}
+    </div>
+    <div class="glass-card role-card reveal" style="transition-delay:.16s">
+      <div class="role-icon icon-box icon-box-lg icon-box-green"><i class="fa-solid fa-shield-halved"></i></div>
+      <h3>Administrators</h3>
+      <p>Full control — manage users, post announcements, track fees, view query analytics, and oversee the entire platform.</p>
+      {% if not session.get('user_id') %}<a href="/register" class="btn btn-ghost btn-sm" style="margin-top:var(--space-md)">Join as Admin <i class="fa-solid fa-arrow-right"></i></a>{% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+{% if not session.get('user_id') %}
+<section class="section cta-section">
+  <div class="glass-card cta-card reveal">
+    <div class="cta-icon icon-box icon-box-lg icon-box-blue"><i class="fa-solid fa-rocket"></i></div>
+    <h2>Ready to get started?</h2>
+    <p>Join CampusBot and take control of your academic experience.</p>
+    <div class="hero-actions" style="justify-content:center">
+      <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-user-plus"></i> Create Account</a>
+      <a href="/login" class="btn btn-secondary btn-lg">Sign In</a>
+    </div>
+  </div>
+</section>
+{% else %}
+<section class="section cta-section">
+  <div class="glass-card cta-card reveal" style="background:linear-gradient(135deg,#f0f4ff,#faf5ff);border-color:#ddd6fe">
+    <div class="cta-icon icon-box icon-box-lg icon-box-green"><i class="fa-solid fa-circle-check"></i></div>
+    <h2>Welcome back, <span class="gradient-text">{{ session.get('user_name','').split()[0] }}</span></h2>
+    <p>You're signed in. Head to your dashboard or start chatting with the AI.</p>
+    <div class="hero-actions" style="justify-content:center">
+      <a href="/dashboard" class="btn btn-primary btn-lg"><i class="fa-solid fa-table-columns"></i> My Dashboard</a>
+      <a href="/chat" class="btn btn-secondary btn-lg"><i class="fa-solid fa-robot"></i> AI Chat</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── FOOTER ── -->
+<footer class="main-footer">
+  <div class="footer-inner">
+    <div class="footer-brand-col">
+      <div class="footer-logo">
+        <div class="nav-brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <span>CampusBot</span>
+      </div>
+      <p>AI-powered smart campus platform for students, faculty, and administrators.</p>
+      <div class="footer-social">
+        <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+        <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      </div>
+    </div>
+    <div class="footer-links-col">
+      <h4>Features</h4>
+      <ul>
+        <li><a href="#features"><i class="fa-solid fa-robot"></i> AI Chatbot</a></li>
+        <li><a href="#features"><i class="fa-solid fa-clipboard-check"></i> Attendance</a></li>
+        <li><a href="#features"><i class="fa-solid fa-briefcase"></i> Placements</a></li>
+        <li><a href="#features"><i class="fa-solid fa-ticket"></i> Support</a></li>
+      </ul>
+    </div>
+    <div class="footer-links-col">
+      <h4>Portals</h4>
+      <ul>
+        <li><a href="#roles"><i class="fa-solid fa-user-graduate"></i> Students</a></li>
+        <li><a href="#roles"><i class="fa-solid fa-chalkboard-user"></i> Faculty</a></li>
+        <li><a href="#roles"><i class="fa-solid fa-shield-halved"></i> Admins</a></li>
+      </ul>
+    </div>
+    <div class="footer-links-col">
+      <h4>Account</h4>
+      <ul>
+        {% if session.get('user_id') %}
+        <li><a href="/dashboard"><i class="fa-solid fa-table-columns"></i> Dashboard</a></li>
+        <li><a href="/chat"><i class="fa-solid fa-robot"></i> AI Chat</a></li>
+        <li><a href="/profile"><i class="fa-solid fa-user"></i> Profile</a></li>
+        {% else %}
+        <li><a href="/login"><i class="fa-solid fa-right-to-bracket"></i> Sign In</a></li>
+        <li><a href="/register"><i class="fa-solid fa-user-plus"></i> Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-bottom-inner">
+      <p>&copy; 2025 CampusBot. All rights reserved.</p>
+      <div class="footer-tech">
+        <span><i class="fa-brands fa-python"></i> FastAPI</span>
+        <span><i class="fa-solid fa-database"></i> PostgreSQL</span>
+        <span><i class="fa-brands fa-js"></i> Vanilla JS</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</div>
+{% endblock %}

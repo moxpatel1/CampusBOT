@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant — CampusBot{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="chat-layout">
+
+    <aside class="chat-sidebar">
+      <div class="chat-sidebar-header">
+        <h3>Conversations</h3>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="clearChat()" title="New chat">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+      <div class="chat-history-list" id="chat-history-list">
+        <div class="chat-history-item active">
+          <div class="chat-history-title">Campus Assistant</div>
+          <div class="chat-history-preview">Ask me anything about campus...</div>
+        </div>
+      </div>
+      <div class="chat-sidebar-footer">
+        <a href="/dashboard" class="btn btn-secondary w-full btn-sm" style="justify-content:center">
+          <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </a>
+      </div>
+    </aside>
+
+    <div class="chat-main">
+
+      <div class="chat-header">
+        <div class="chat-bot-avatar">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="chat-bot-info">
+          <h4>CampusBot AI</h4>
+          <div class="chat-bot-status">Online</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="clearChat()" title="Clear chat">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages">
+        <div class="message bot">
+          <div class="message-avatar bot-avatar">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <div class="message-bubble">
+              Hello, <strong>{{ user.name.split()[0] }}</strong>. I'm CampusBot AI — your campus assistant.
+              I can help with events, assignments, grades, library, fees, and placements. What do you need?
+            </div>
+            <div class="message-time">Just now</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-replies" id="quick-replies">
+        <button class="quick-reply-chip" onclick="sendQuick('What events are coming up?')">
+          <i class="fa-solid fa-calendar-days"></i> Upcoming events
+        </button>
+        <button class="quick-reply-chip" onclick="sendQuick('Show my assignments')">
+          <i class="fa-solid fa-file-lines"></i> My assignments
+        </button>
+        <button class="quick-reply-chip" onclick="sendQuick('What are my grades?')">
+          <i class="fa-solid fa-chart-bar"></i> My grades
+        </button>
+        <button class="quick-reply-chip" onclick="sendQuick('Library hours')">
+          <i class="fa-solid fa-book"></i> Library
+        </button>
+        <button class="quick-reply-chip" onclick="sendQuick('Placement info')">
+          <i class="fa-solid fa-briefcase"></i> Placements
+        </button>
+        <button class="quick-reply-chip" onclick="sendQuick('Fee payment details')">
+          <i class="fa-solid fa-credit-card"></i> Fees
+        </button>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+          <textarea class="chat-input" id="chat-input" placeholder="Ask anything about campus..." rows="1"></textarea>
+          <button class="chat-send-btn" id="send-btn" title="Send">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const messagesEl = document.getElementById('chat-messages');
+const inputEl    = document.getElementById('chat-input');
+const sendBtn    = document.getElementById('send-btn');
+let isTyping = false;
+
+inputEl.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+sendBtn.addEventListener('click', sendMessage);
+
+function scrollToBottom() {
+  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^## (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^# (.+)$/gm, '<strong>$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n/g, '<br>');
+}
+
+function addMessage(content, sender, time) {
+  const isBot = sender === 'bot';
+  const div = document.createElement('div');
+  div.className = `message ${sender}`;
+  div.innerHTML = `
+    <div class="message-avatar ${isBot ? 'bot-avatar' : 'user-avatar'}">
+      ${isBot ? '<i class="fa-solid fa-robot"></i>' : '<i class="fa-solid fa-user"></i>'}
+    </div>
+    <div class="message-content">
+      <div class="message-bubble">${isBot ? renderMarkdown(content) : content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+      <div class="message-time">
+        ${time || new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
+      </div>
+    </div>
+  `;
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'typing-indicator';
+  div.id = 'typing-indicator';
+  div.innerHTML = `
+    <div class="message-avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+    <div class="typing-dots">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function hideTyping() {
+  document.getElementById('typing-indicator')?.remove();
+}
+
+async function sendMessage() {
+  const msg = inputEl.value.trim();
+  if (!msg || isTyping) return;
+
+  document.getElementById('quick-replies').style.display = 'none';
+  addMessage(msg, 'user');
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  isTyping = true;
+  sendBtn.disabled = true;
+  showTyping();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await res.json();
+    hideTyping();
+    if (data.reply) {
+      addMessage(data.reply, 'bot');
+    } else {
+      addMessage(data.error || 'Sorry, something went wrong. Please try again.', 'bot');
+    }
+  } catch {
+    hideTyping();
+    addMessage('Sorry, I encountered a network error. Please try again.', 'bot');
+  }
+
+  isTyping = false;
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+function sendQuick(msg) {
+  inputEl.value = msg;
+  sendMessage();
+}
+
+function clearChat() {
+  fetch('/api/chat/clear', { method: 'POST' });
+  messagesEl.innerHTML = '';
+  document.getElementById('quick-replies').style.display = 'flex';
+  addMessage('Chat cleared. How can I help you?', 'bot');
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/chat/history');
+    const msgs = await res.json();
+    if (msgs.length > 0) {
+      document.getElementById('quick-replies').style.display = 'none';
+      msgs.forEach(m => addMessage(m.content, m.sender));
+    }
+  } catch {}
+}
+
+loadHistory();
+inputEl.focus();
+</script>
+{% endblock %}

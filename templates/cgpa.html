@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}CGPA Calculator — CampusBot{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+<div class="inner-page-layout" style="max-width:700px">
+  <div class="inner-page-header">
+    <div>
+      <h2>CGPA <span class="gradient-text">Calculator</span></h2>
+      <p>Calculate your semester GPA and cumulative CGPA</p>
+    </div>
+  </div>
+
+  <div class="glass-card" style="padding:var(--space-xl);margin-bottom:var(--space-lg)">
+    <h4 style="margin-bottom:var(--space-lg)"><i class="fa-solid fa-calculator" style="color:var(--accent)"></i> Semester GPA Calculator</h4>
+
+    <div id="subjects-container">
+      <div class="subject-row" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px">
+        <div><label class="form-label">Subject Name</label><input type="text" class="form-input" placeholder="e.g. Data Structures" /></div>
+        <div><label class="form-label">Credits</label><input type="number" class="form-input" placeholder="4" min="1" max="6" /></div>
+        <div><label class="form-label">Grade</label>
+          <select class="form-select">
+            <option value="10">O (10)</option><option value="9">A+ (9)</option>
+            <option value="8">A (8)</option><option value="7">B+ (7)</option>
+            <option value="6">B (6)</option><option value="5">C (5)</option>
+            <option value="4">D (4)</option><option value="0">F (0)</option>
+          </select>
+        </div>
+        <div style="padding-bottom:2px"><button class="btn btn-ghost btn-sm btn-icon" onclick="removeRow(this)" title="Remove"><i class="fa-solid fa-xmark" style="color:var(--red)"></i></button></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:var(--space-md)">
+      <button class="btn btn-secondary btn-sm" onclick="addRow()"><i class="fa-solid fa-plus"></i> Add Subject</button>
+      <button class="btn btn-primary btn-sm" onclick="calculateGPA()"><i class="fa-solid fa-calculator"></i> Calculate GPA</button>
+    </div>
+
+    <div id="gpa-result" style="display:none;margin-top:var(--space-xl);padding:var(--space-lg);background:linear-gradient(135deg,#eff6ff,#faf5ff);border:1px solid #bfdbfe;border-radius:var(--radius-lg);text-align:center">
+      <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:4px">Your Semester GPA</div>
+      <div id="gpa-value" style="font-size:3rem;font-weight:800;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text"></div>
+      <div id="gpa-grade" style="font-size:.9rem;color:var(--text-secondary);margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- CGPA from multiple semesters -->
+  <div class="glass-card" style="padding:var(--space-xl)">
+    <h4 style="margin-bottom:var(--space-lg)"><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Cumulative CGPA Calculator</h4>
+    <p style="font-size:.875rem;margin-bottom:var(--space-lg)">Enter your GPA and total credits for each completed semester.</p>
+
+    <div id="semesters-container">
+      <div class="sem-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px">
+        <div><label class="form-label">Semester GPA</label><input type="number" class="form-input" placeholder="8.5" step="0.01" min="0" max="10" /></div>
+        <div><label class="form-label">Total Credits</label><input type="number" class="form-input" placeholder="24" min="1" /></div>
+        <div style="padding-bottom:2px"><button class="btn btn-ghost btn-sm btn-icon" onclick="removeSem(this)"><i class="fa-solid fa-xmark" style="color:var(--red)"></i></button></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:var(--space-md)">
+      <button class="btn btn-secondary btn-sm" onclick="addSem()"><i class="fa-solid fa-plus"></i> Add Semester</button>
+      <button class="btn btn-primary btn-sm" onclick="calculateCGPA()"><i class="fa-solid fa-calculator"></i> Calculate CGPA</button>
+    </div>
+
+    <div id="cgpa-result" style="display:none;margin-top:var(--space-xl);padding:var(--space-lg);background:linear-gradient(135deg,#f0fdf4,#ecfeff);border:1px solid #bbf7d0;border-radius:var(--radius-lg);text-align:center">
+      <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:4px">Your Cumulative CGPA</div>
+      <div id="cgpa-value" style="font-size:3rem;font-weight:800;background:var(--grad-green);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text"></div>
+      <div id="cgpa-grade" style="font-size:.9rem;color:var(--text-secondary);margin-top:4px"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addRow() {
+  const c = document.getElementById('subjects-container');
+  const div = document.createElement('div');
+  div.className = 'subject-row';
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px';
+  div.innerHTML = `
+    <div><input type="text" class="form-input" placeholder="Subject name" /></div>
+    <div><input type="number" class="form-input" placeholder="4" min="1" max="6" /></div>
+    <div><select class="form-select">
+      <option value="10">O (10)</option><option value="9">A+ (9)</option>
+      <option value="8">A (8)</option><option value="7">B+ (7)</option>
+      <option value="6">B (6)</option><option value="5">C (5)</option>
+      <option value="4">D (4)</option><option value="0">F (0)</option>
+    </select></div>
+    <div style="padding-bottom:2px"><button class="btn btn-ghost btn-sm btn-icon" onclick="removeRow(this)"><i class="fa-solid fa-xmark" style="color:var(--red)"></i></button></div>`;
+  c.appendChild(div);
+}
+
+function removeRow(btn) {
+  const rows = document.querySelectorAll('.subject-row');
+  if (rows.length > 1) btn.closest('.subject-row').remove();
+}
+
+function calculateGPA() {
+  const rows = document.querySelectorAll('.subject-row');
+  let totalPoints = 0, totalCredits = 0;
+  rows.forEach(row => {
+    const credits = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+    const grade   = parseFloat(row.querySelector('select').value) || 0;
+    totalPoints  += credits * grade;
+    totalCredits += credits;
+  });
+  if (!totalCredits) { CampusBot.showToast('Please enter credits for at least one subject', 'error'); return; }
+  const gpa = (totalPoints / totalCredits).toFixed(2);
+  const gradeLabel = gpa >= 9 ? 'Outstanding' : gpa >= 8 ? 'Excellent' : gpa >= 7 ? 'Very Good' : gpa >= 6 ? 'Good' : gpa >= 5 ? 'Average' : 'Below Average';
+  document.getElementById('gpa-value').textContent = gpa;
+  document.getElementById('gpa-grade').textContent = gradeLabel + ' · ' + totalCredits + ' credits';
+  document.getElementById('gpa-result').style.display = 'block';
+}
+
+function addSem() {
+  const c = document.getElementById('semesters-container');
+  const div = document.createElement('div');
+  div.className = 'sem-row';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px';
+  div.innerHTML = `
+    <div><input type="number" class="form-input" placeholder="8.5" step="0.01" min="0" max="10" /></div>
+    <div><input type="number" class="form-input" placeholder="24" min="1" /></div>
+    <div style="padding-bottom:2px"><button class="btn btn-ghost btn-sm btn-icon" onclick="removeSem(this)"><i class="fa-solid fa-xmark" style="color:var(--red)"></i></button></div>`;
+  c.appendChild(div);
+}
+
+function removeSem(btn) {
+  const rows = document.querySelectorAll('.sem-row');
+  if (rows.length > 1) btn.closest('.sem-row').remove();
+}
+
+function calculateCGPA() {
+  const rows = document.querySelectorAll('.sem-row');
+  let totalPoints = 0, totalCredits = 0;
+  rows.forEach(row => {
+    const gpa     = parseFloat(row.querySelectorAll('input')[0].value) || 0;
+    const credits = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+    totalPoints  += gpa * credits;
+    totalCredits += credits;
+  });
+  if (!totalCredits) { CampusBot.showToast('Please enter data for at least one semester', 'error'); return; }
+  const cgpa = (totalPoints / totalCredits).toFixed(2);
+  const gradeLabel = cgpa >= 9 ? 'Outstanding' : cgpa >= 8 ? 'Excellent' : cgpa >= 7 ? 'Very Good' : cgpa >= 6 ? 'Good' : cgpa >= 5 ? 'Average' : 'Below Average';
+  document.getElementById('cgpa-value').textContent = cgpa;
+  document.getElementById('cgpa-grade').textContent = gradeLabel + ' · ' + totalCredits + ' total credits';
+  document.getElementById('cgpa-result').style.display = 'block';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}FAQ — CampusBot{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+<div class="inner-page-layout">
+  <div class="inner-page-header">
+    <div>
+      <h2>Frequently Asked <span class="gradient-text">Questions</span></h2>
+      <p>Find quick answers to common campus queries</p>
+    </div>
+    {% if session.get('user_role') in ['admin','faculty'] %}
+    <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-faq')">
+      <i class="fa-solid fa-plus"></i> Add FAQ
+    </button>
+    {% endif %}
+  </div>
+
+  <input type="text" class="form-input" id="faq-search" placeholder="Search FAQs..." oninput="searchFAQs(this.value)" style="margin-bottom:var(--space-xl)" />
+
+  <div id="faq-list">
+    <div class="skeleton" style="height:90px;border-radius:12px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:90px;border-radius:12px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:90px;border-radius:12px"></div>
+  </div>
+</div>
+</div>
+
+{% if session.get('user_role') in ['admin','faculty'] %}
+<div class="modal-overlay" id="modal-faq">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-circle-question" style="color:var(--accent)"></i> Add FAQ</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-faq')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-faq">
+      <div class="form-group"><label class="form-label">Question *</label><input type="text" class="form-input" id="faq-q" placeholder="e.g. How do I check my exam schedule?" required /></div>
+      <div class="form-group"><label class="form-label">Answer *</label><textarea class="form-input" id="faq-a" rows="3" placeholder="Write the answer..." required></textarea></div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-select" id="faq-cat">
+          <option value="general">General</option><option value="academic">Academic</option>
+          <option value="fees">Fees</option><option value="hostel">Hostel</option>
+          <option value="placements">Placements</option><option value="library">Library</option>
+        </select>
+      </div>
+      <div id="faq-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-faq')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i><span class="btn-text"> Add</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allFAQs = [];
+
+async function loadFAQs() {
+  try {
+    const r = await fetch('/api/faqs');
+    allFAQs = await r.json();
+    renderFAQs(allFAQs);
+  } catch { document.getElementById('faq-list').innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load FAQs</p></div>'; }
+}
+
+function renderFAQs(faqs) {
+  const list = document.getElementById('faq-list');
+  if (!faqs.length) { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-question"></i><p>No FAQs yet</p></div>'; return; }
+  list.innerHTML = faqs.map(f => `
+    <div class="glass-card" style="padding:var(--space-lg);margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-md)">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:.95rem;margin-bottom:6px;color:var(--text-primary)"><i class="fa-solid fa-circle-question" style="color:var(--accent)"></i> ${f.question}</div>
+          <div style="font-size:.875rem;color:var(--text-secondary);line-height:1.6">${f.answer}</div>
+          <span class="badge badge-gray" style="margin-top:8px">${f.category}</span>
+        </div>
+        {% if session.get('user_role') in ['admin','faculty'] %}
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteFAQ(${f.id})"><i class="fa-solid fa-trash-can" style="color:var(--red)"></i></button>
+        {% endif %}
+      </div>
+    </div>`).join('');
+}
+
+function searchFAQs(q) {
+  q = q.toLowerCase();
+  renderFAQs(allFAQs.filter(f => f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q)));
+}
+
+async function deleteFAQ(id) {
+  if (!confirm('Delete this FAQ?')) return;
+  await fetch(`/api/faqs/${id}`, { method: 'DELETE' });
+  CampusBot.showToast('Deleted', 'success');
+  loadFAQs();
+}
+
+document.getElementById('form-faq')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  try {
+    const r = await fetch('/api/faqs', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ question: document.getElementById('faq-q').value.trim(), answer: document.getElementById('faq-a').value.trim(), category: document.getElementById('faq-cat').value })
+    });
+    const d = await r.json();
+    if (d.success) { CampusBot.closeModal('modal-faq'); CampusBot.showToast('FAQ added', 'success'); e.target.reset(); loadFAQs(); }
+    else document.getElementById('faq-alert').innerHTML = `<div class="alert alert-error">${d.error}</div>`;
+  } catch { document.getElementById('faq-alert').innerHTML = '<div class="alert alert-error">Failed</div>'; }
+  btn.classList.remove('loading');
+});
+
+loadFAQs();
+</script>
+{% endblock %}

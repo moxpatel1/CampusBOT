@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Support Tickets — CampusBot{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+<div class="inner-page-layout">
+  <div class="inner-page-header">
+    <div>
+      <h2>Support <span class="gradient-text">Tickets</span></h2>
+      <p>{% if session.get('user_role') in ['admin','faculty'] %}Manage all student complaints and queries{% else %}Raise a complaint or query — we'll respond within 24 hours{% endif %}</p>
+    </div>
+    {% if session.get('user_role') == 'student' %}
+    <button class="btn btn-primary btn-sm" onclick="CampusBot.openModal('modal-ticket')">
+      <i class="fa-solid fa-plus"></i> Raise Ticket
+    </button>
+    {% endif %}
+  </div>
+
+  <div id="tickets-list">
+    <div class="skeleton" style="height:80px;border-radius:12px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:80px;border-radius:12px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:80px;border-radius:12px"></div>
+  </div>
+</div>
+</div>
+
+<!-- Raise ticket modal -->
+<div class="modal-overlay" id="modal-ticket">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-ticket" style="color:var(--accent)"></i> Raise Support Ticket</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-ticket')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="form-ticket">
+      <div class="form-group"><label class="form-label">Subject *</label><input type="text" class="form-input" id="tk-title" placeholder="Brief description of your issue" required /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category</label>
+          <select class="form-select" id="tk-category">
+            <option value="academic">Academic</option><option value="fees">Fees</option>
+            <option value="hostel">Hostel</option><option value="technical">Technical</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Priority</label>
+          <select class="form-select" id="tk-priority">
+            <option value="normal">Normal</option><option value="urgent">Urgent</option><option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="tk-desc" rows="4" placeholder="Describe your issue in detail..."></textarea></div>
+      <div id="tk-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-ticket')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i><span class="btn-text"> Submit</span></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Respond modal (admin/faculty) -->
+<div class="modal-overlay" id="modal-respond">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-reply" style="color:var(--accent)"></i> Respond to Ticket</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('modal-respond')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="respond-ticket-info" style="background:var(--bg-primary);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);font-size:.875rem"></div>
+    <div class="form-group"><label class="form-label">Response *</label><textarea class="form-input" id="respond-text" rows="4" placeholder="Write your response..."></textarea></div>
+    <div class="form-group"><label class="form-label">Update Status</label>
+      <select class="form-select" id="respond-status">
+        <option value="in_progress">In Progress</option><option value="resolved">Resolved</option><option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('modal-respond')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitResponse()"><i class="fa-solid fa-check"></i><span class="btn-text"> Send Response</span></button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentTicketId = null;
+const statusColors = { open:'badge-orange', in_progress:'badge-blue', resolved:'badge-green', closed:'badge-gray' };
+const catColors    = { academic:'badge-purple', fees:'badge-orange', hostel:'badge-cyan', technical:'badge-red', general:'badge-gray' };
+
+async function loadTickets() {
+  const list = document.getElementById('tickets-list');
+  try {
+    const r = await fetch('/api/tickets');
+    const data = await r.json();
+    if (!data.length) { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-ticket"></i><p>No tickets yet</p></div>'; return; }
+    list.innerHTML = data.map(t => `
+      <div class="glass-card" style="padding:var(--space-lg);margin-bottom:10px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+              <span style="font-weight:600">#${t.id} — ${t.title}</span>
+              <span class="badge ${statusColors[t.status]||'badge-gray'}">${t.status.replace('_',' ')}</span>
+              <span class="badge ${catColors[t.category]||'badge-gray'}">${t.category}</span>
+              ${t.priority==='urgent'?'<span class="badge badge-red">Urgent</span>':''}
+            </div>
+            ${t.description?`<div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:6px">${t.description}</div>`:''}
+            ${t.response?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:10px 14px;font-size:.82rem;color:#15803d;margin-top:8px"><i class="fa-solid fa-reply"></i> <strong>Response:</strong> ${t.response}</div>`:''}
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px"><i class="fa-regular fa-clock"></i> ${t.created_at} ${t.user_name?'· '+t.user_name:''}</div>
+          </div>
+          {% if session.get('user_role') in ['admin','faculty'] %}
+          <button class="btn btn-secondary btn-sm" onclick="openRespond(${t.id},'${t.title.replace(/'/g,"\\'")}','${t.description?t.description.replace(/'/g,"\\'").substring(0,80):''}')">
+            <i class="fa-solid fa-reply"></i> Respond
+          </button>
+          {% endif %}
+        </div>
+      </div>`).join('');
+  } catch { list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load tickets</p></div>'; }
+}
+
+function openRespond(id, title, desc) {
+  currentTicketId = id;
+  document.getElementById('respond-ticket-info').innerHTML = `<strong>${title}</strong><br><span style="color:var(--text-muted)">${desc}</span>`;
+  CampusBot.openModal('modal-respond');
+}
+
+async function submitResponse() {
+  const btn = document.querySelector('#modal-respond .btn-primary');
+  btn.classList.add('loading');
+  try {
+    const r = await fetch(`/api/tickets/${currentTicketId}/respond`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ response: document.getElementById('respond-text').value, status: document.getElementById('respond-status').value })
+    });
+    const d = await r.json();
+    if (d.success) { CampusBot.closeModal('modal-respond'); CampusBot.showToast('Response sent!', 'success'); document.getElementById('respond-text').value = ''; loadTickets(); }
+  } catch {}
+  btn.classList.remove('loading');
+}
+
+document.getElementById('form-ticket').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.classList.add('loading');
+  try {
+    const r = await fetch('/api/tickets', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ title: document.getElementById('tk-title').value.trim(), description: document.getElementById('tk-desc').value.trim(), category: document.getElementById('tk-category').value, priority: document.getElementById('tk-priority').value })
+    });
+    const d = await r.json();
+    if (d.success) { CampusBot.closeModal('modal-ticket'); CampusBot.showToast('Ticket submitted! We will respond within 24 hours.', 'success'); e.target.reset(); loadTickets(); }
+    else document.getElementById('tk-alert').innerHTML = `<div class="alert alert-error">${d.error}</div>`;
+  } catch { document.getElementById('tk-alert').innerHTML = '<div class="alert alert-error">Failed</div>'; }
+  btn.classList.remove('loading');
+});
+
+loadTickets();
+</script>
+{% endblock %}

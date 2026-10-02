@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% set show_navbar = false %}
+{% block title %}Create Account — CampusBot{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-container" style="max-width:500px">
+
+    <div class="auth-back">
+      <a href="/"><i class="fa-solid fa-arrow-left"></i> Back to home</a>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <i class="fa-solid fa-user-plus"></i>
+        </div>
+        <h2>Create your account</h2>
+        <p>Join CampusBot — it's free</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="name" placeholder="Your full name" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input type="email" class="form-input" id="email" placeholder="you@campus.edu" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select class="form-select" id="role">
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+              <option value="parent">Parent</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <select class="form-select" id="department">
+              <option value="Computer Science">Computer Science</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Civil">Civil</option>
+              <option value="Business">Business</option>
+              <option value="Arts">Arts</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-icon-wrap">
+            <input type="password" class="form-input" id="password" placeholder="Min. 6 characters" required minlength="6" />
+            <button type="button" id="toggle-pw" class="input-icon-btn">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <div class="pw-strength-wrap">
+            <div class="pw-strength-bar" id="pw-strength-bar"></div>
+          </div>
+          <div class="pw-strength-label" id="pw-strength-label"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" style="justify-content:center">
+          <i class="fa-solid fa-user-plus"></i>
+          <span class="btn-text">Create Account</span>
+        </button>
+      </form>
+
+      <p class="auth-footer-text">
+        Already have an account? <a href="/login">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('toggle-pw').addEventListener('click', function() {
+  const pw = document.getElementById('password');
+  const icon = this.querySelector('i');
+  if (pw.type === 'password') {
+    pw.type = 'text';
+    icon.className = 'fa-solid fa-eye-slash';
+  } else {
+    pw.type = 'password';
+    icon.className = 'fa-solid fa-eye';
+  }
+});
+
+document.getElementById('password').addEventListener('input', function() {
+  const val = this.value;
+  const bar = document.getElementById('pw-strength-bar');
+  const label = document.getElementById('pw-strength-label');
+  let strength = 0;
+  if (val.length >= 6) strength++;
+  if (val.length >= 10) strength++;
+  if (/[A-Z]/.test(val)) strength++;
+  if (/[0-9]/.test(val)) strength++;
+  if (/[^A-Za-z0-9]/.test(val)) strength++;
+  const levels = [
+    { w: '0%',   color: 'transparent', text: '' },
+    { w: '25%',  color: '#ef4444',     text: 'Weak' },
+    { w: '50%',  color: '#f59e0b',     text: 'Fair' },
+    { w: '75%',  color: '#3b82f6',     text: 'Good' },
+    { w: '100%', color: '#10b981',     text: 'Strong' },
+    { w: '100%', color: '#10b981',     text: 'Strong' },
+  ];
+  bar.style.width = levels[strength].w;
+  bar.style.background = levels[strength].color;
+  label.textContent = levels[strength].text;
+  label.style.color = levels[strength].color;
+});
+
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.classList.add('loading');
+  const alertBox = document.getElementById('alert-container');
+  alertBox.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value,
+        department: document.getElementById('department').value
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alertBox.innerHTML = '<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Account created. Redirecting...</div>';
+      setTimeout(() => window.location.href = data.redirect, 800);
+    } else {
+      alertBox.innerHTML = `<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> ${data.error}</div>`;
+      btn.classList.remove('loading');
+    }
+  } catch {
+    alertBox.innerHTML = '<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> Connection error. Try again.</div>';
+    btn.classList.remove('loading');
+  }
+});
+</script>
+{% endblock %}

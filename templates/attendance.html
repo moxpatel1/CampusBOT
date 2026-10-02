@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% block title %}Attendance — CampusBot{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── ATTENDANCE PAGE ── */
+.att-page { max-width: 1100px; margin: 0 auto; padding: var(--space-xl) var(--space-2xl); }
+
+/* ── MARK ATTENDANCE TOOLBAR (admin/faculty) ── */
+.att-toolbar {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: flex-end; gap: var(--space-md); flex-wrap: wrap;
+}
+.att-toolbar .form-group { margin-bottom: 0; flex: 1; min-width: 140px; }
+.att-toolbar-actions { display: flex; gap: 8px; align-items: flex-end; }
+
+/* ── STUDENT CARDS GRID ── */
+.att-students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-md);
+}
+
+.att-student-card {
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.att-student-card.present {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 3px rgba(22,163,74,.1);
+}
+.att-student-card.absent {
+  border-color: #dc2626;
+  background: #fff5f5;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+}
+
+/* Avatar circle */
+.att-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 800; color: white;
+  margin: 0 auto var(--space-sm);
+  border: 3px solid transparent;
+  transition: var(--transition);
+}
+.att-student-card.present .att-avatar { background: #16a34a; border-color: #bbf7d0; }
+.att-student-card.absent  .att-avatar { background: #dc2626; border-color: #fecaca; }
+
+.att-student-name {
+  font-size: .875rem; font-weight: 600;
+  color: var(--text-primary); margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.att-student-dept { font-size: .72rem; color: var(--text-muted); margin-bottom: var(--space-md); }
+
+/* Present / Absent buttons */
+.att-btn-group { display: flex; gap: 6px; justify-content: center; }
+.att-btn {
+  flex: 1; padding: 7px 4px;
+  border-radius: var(--radius-md);
+  font-size: .75rem; font-weight: 700;
+  cursor: pointer; border: 1.5px solid;
+  transition: var(--transition-fast);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.att-btn-present {
+  background: #f0fdf4; border-color: #bbf7d0; color: #15803d;
+}
+.att-btn-present:hover,
+.att-student-card.present .att-btn-present {
+  background: #16a34a; border-color: #16a34a; color: white;
+}
+.att-btn-absent {
+  background: #fff5f5; border-color: #fecaca; color: #b91c1c;
+}
+.att-btn-absent:hover,
+.att-student-card.absent .att-btn-absent {
+  background: #dc2626; border-color: #dc2626; color: white;
+}
+
+/* Status badge on card */
+.att-status-badge {
+  position: absolute; top: 10px; right: 10px;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; color: white;
+  opacity: 0; transition: var(--transition-fast);
+}
+.att-student-card.present .att-status-badge { background: #16a34a; opacity: 1; }
+.att-student-card.absent  .att-status-badge { background: #dc2626; opacity: 1; }
+
+/* Summary bar */
+.att-summary {
+  display: flex; align-items: center; gap: var(--space-lg);
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-xl); box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+.att-summary-item { display: flex; align-items: center; gap: 8px; font-size: .875rem; }
+.att-summary-dot  { width: 10px; height: 10px; border-radius: 50%; }
+.att-summary-count { font-weight: 700; font-size: 1.1rem; }
+
+/* Mark all buttons */
+.att-mark-all { display: flex; gap: 8px; margin-left: auto; }
+
+/* ── STUDENT VIEW ── */
+.att-subject-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+.att-subject-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-md); flex-wrap: wrap; gap: 8px;
+}
+.att-subject-name { font-size: .95rem; font-weight: 700; }
+.att-subject-counts { font-size: .78rem; color: var(--text-muted); }
+.att-bar-wrap { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.att-bar-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+.att-warning-msg {
+  margin-top: 10px; font-size: .78rem; color: #b91c1c;
+  background: #fff5f5; border: 1px solid #fecaca;
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .att-page { padding: var(--space-lg); }
+  .att-students-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .att-toolbar { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+<div class="att-page">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:var(--space-md);margin-bottom:var(--space-xl)">
+    <div>
+      <h2>Attendance <span class="gradient-text">Tracker</span></h2>
+      <p style="color:var(--text-muted);font-size:.85rem;margin-top:2px">
+        {% if session.get('user_role') in ['admin','faculty'] %}
+          Mark and manage student attendance
+        {% else %}
+          Your attendance across all subjects
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if session.get('user_role') in ['admin','faculty'] %}
+  <!-- ── ADMIN / FACULTY VIEW ── -->
+
+  <!-- Toolbar -->
+  <div class="att-toolbar">
+    <div class="form-group">
+      <label class="form-label">Subject *</label>
+      <input type="text" class="form-input" id="att-subject" placeholder="e.g. Data Structures" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date *</label>
+      <input type="date" class="form-input" id="att-date" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Department</label>
+      <select class="form-select" id="att-dept" onchange="loadStudentsForAttendance()">
+        <option value="">All Departments</option>
+        {% for d in ['Computer Science','Electronics','Mechanical','Civil','Business','Arts'] %}
+        <option value="{{ d }}" {% if user.department == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="att-toolbar-actions">
+      <button class="btn btn-primary btn-sm" onclick="loadStudentsForAttendance()">
+        <i class="fa-solid fa-users"></i> Load Students
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="att-summary" id="att-summary" style="display:none">
+    <div class="att-summary-item">
+      <div class="att-summary-dot" style="background:#16a34a"></div>
+      <span>Present:</span>
+      <span class="att-summary-count" id="count-present" style="color:#16a34a">0</span>
+    </div>
+    <div class="att-summary-item">
+      <div class="att-summary-dot" style="background:#dc2626"></div>
+      <span>Absent:</span>
+      <span class="att-summary-count" id="count-absent" style="color:#dc2626">0</span>
+    </div>
+    <div class="att-summary-item">
+      <div class="att-summary-dot" style="background:var(--border)"></div>
+      <span>Unmarked:</span>
+      <span class="att-summary-count" id="count-unmarked">0</span>
+    </div>
+    <div class="att-mark-all">
+      <button class="btn btn-sm" style="background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-weight:700" onclick="markAll('present')">
+        <i class="fa-solid fa-check-double"></i> All Present
+      </button>
+      <button class="btn btn-sm" style="background:#fff5f5;border:1.5px solid #fecaca;color:#b91c1c;font-weight:700" onclick="markAll('absent')">
+        <i class="fa-solid fa-xmark"></i> All Absent
+      </button>
+    </div>
+  </div>
+
+  <!-- Student cards -->
+  <div class="att-students-grid" id="att-students-grid">
+    <div class="att-subject-card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+      <i class="fa-solid fa-users" style="font-size:2rem;opacity:.3;display:block;margin-bottom:10px"></i>
+      Select a subject and date, then click <strong>Load Students</strong>
+    </div>
+  </div>
+
+  <!-- Save button -->
+  <div id="att-save-bar" style="display:none;margin-top:var(--space-xl);text-align:right">
+    <button class="btn btn-primary" onclick="saveAttendance()">
+      <i class="fa-solid fa-floppy-disk"></i>
+      <span class="btn-text"> Save Attendance</span>
+    </button>
+  </div>
+
+  {% else %}
+  <!-- ── STUDENT VIEW ── -->
+  <div id="student-att-container">
+    {% for i in range(3) %}
+    <div class="skeleton" style="height:90px;border-radius:14px;margin-bottom:12px"></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if session.get('user_role') in ['admin','faculty'] %}
+// ── ADMIN / FACULTY LOGIC ──
+
+// Set today's date
+document.getElementById('att-date').value = new Date().toISOString().split('T')[0];
+
+let students = [];       // all loaded students
+let attendance = {};     // { user_id: 'present'|'absent'|null }
+
+async function loadStudentsForAttendance() {
+  const dept    = document.getElementById('att-dept').value;
+  const subject = document.getElementById('att-subject').value.trim();
+  const date    = document.getElementById('att-date').value;
+
+  const grid = document.getElementById('att-students-grid');
+  grid.innerHTML = Array(6).fill('<div class="skeleton" style="height:180px;border-radius:14px"></div>').join('');
+
+  try {
+    const r = await fetch('/api/admin/users');
+    const all = await r.json();
+    students = all.filter(u => u.role === 'student' && (!dept || u.department === dept));
+
+    if (!students.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)"><i class="fa-solid fa-user-slash" style="font-size:2rem;opacity:.3;display:block;margin-bottom:10px"></i>No students found for this department</div>';
+      return;
+    }
+
+    // Load existing attendance for this subject+date if available
+    attendance = {};
+    if (subject && date) {
+      try {
+        const ar = await fetch(`/api/admin/attendance-day?subject=${encodeURIComponent(subject)}&date=${date}&department=${encodeURIComponent(dept)}`);
+        const existing = await ar.json();
+        existing.forEach(rec => { attendance[rec.user_id] = rec.status; });
+      } catch {}
+    }
+
+    renderStudentCards();
+    document.getElementById('att-summary').style.display = 'flex';
+    document.getElementById('att-save-bar').style.display = 'block';
+    updateSummary();
+  } catch(e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function renderStudentCards() {
+  const grid = document.getElementById('att-students-grid');
+  grid.innerHTML = students.map(s => {
+    const status = attendance[s.id] || null;
+    const cls    = status ? status : '';
+    const initial = s.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    return `
+      <div class="att-student-card ${cls}" id="card-${s.id}">
+        <div class="att-status-badge" id="badge-${s.id}">
+          <i class="fa-solid fa-${status === 'present' ? 'check' : 'xmark'}"></i>
+        </div>
+        <div class="att-avatar" id="avatar-${s.id}">${initial}</div>
+        <div class="att-student-name" title="${s.name}">${s.name}</div>
+        <div class="att-student-dept">${s.department || '—'}</div>
+        <div class="att-btn-group">
+          <button class="att-btn att-btn-present" onclick="markStudent(${s.id},'present')">
+            <i class="fa-solid fa-check"></i> Present
+          </button>
+          <button class="att-btn att-btn-absent" onclick="markStudent(${s.id},'absent')">
+            <i class="fa-solid fa-xmark"></i> Absent
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function markStudent(uid, status) {
+  attendance[uid] = status;
+  const card   = document.getElementById('card-' + uid);
+  const badge  = document.getElementById('badge-' + uid);
+  const avatar = document.getElementById('avatar-' + uid);
+
+  card.className   = 'att-student-card ' + status;
+  badge.innerHTML  = `<i class="fa-solid fa-${status === 'present' ? 'check' : 'xmark'}"></i>`;
+  updateSummary();
+}
+
+function markAll(status) {
+  students.forEach(s => markStudent(s.id, status));
+}
+
+function updateSummary() {
+  const present  = Object.values(attendance).filter(v => v === 'present').length;
+  const absent   = Object.values(attendance).filter(v => v === 'absent').length;
+  const unmarked = students.length - present - absent;
+  document.getElementById('count-present').textContent  = present;
+  document.getElementById('count-absent').textContent   = absent;
+  document.getElementById('count-unmarked').textContent = unmarked;
+}
+
+async function saveAttendance() {
+  const subject = document.getElementById('att-subject').value.trim();
+  const date    = document.getElementById('att-date').value;
+
+  if (!subject) { CampusBot.showToast('Please enter a subject name', 'error'); return; }
+  if (!date)    { CampusBot.showToast('Please select a date', 'error'); return; }
+
+  const marked = Object.entries(attendance);
+  if (!marked.length) { CampusBot.showToast('No attendance marked yet', 'error'); return; }
+
+  const btn = document.querySelector('[onclick="saveAttendance()"]');
+  btn.classList.add('loading');
+
+  let saved = 0;
+  for (const [uid, status] of marked) {
+    try {
+      await fetch('/api/attendance/mark-one', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: parseInt(uid), subject, date, status })
+      });
+      saved++;
+    } catch {}
+  }
+
+  btn.classList.remove('loading');
+  CampusBot.showToast(`Attendance saved for ${saved} student(s)`, 'success');
+}
+
+{% else %}
+// ── STUDENT VIEW ──
+async function loadStudentAttendance() {
+  const container = document.getElementById('student-att-container');
+  try {
+    const r    = await fetch('/api/attendance');
+    const data = await r.json();
+
+    if (!data.length) {
+      container.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-muted)"><i class="fa-solid fa-clipboard" style="font-size:2rem;opacity:.3;display:block;margin-bottom:10px"></i><p>No attendance records yet</p></div>';
+      return;
+    }
+
+    container.innerHTML = data.map(s => {
+      const pct   = s.percentage;
+      const color = pct >= 75 ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626';
+      const badge = pct >= 75 ? 'badge-green' : pct >= 60 ? 'badge-orange' : 'badge-red';
+      const need  = pct < 75 ? Math.ceil((0.75 * s.total - s.present) / 0.25) : 0;
+      return `
+        <div class="att-subject-card">
+          <div class="att-subject-header">
+            <div>
+              <div class="att-subject-name">${s.subject}</div>
+              <div class="att-subject-counts">${s.present} present &middot; ${s.absent} absent &middot; ${s.total} total classes</div>
+            </div>
+            <span class="badge ${badge}" style="font-size:.85rem;padding:6px 14px">${pct}%</span>
+          </div>
+          <div class="att-bar-wrap">
+            <div class="att-bar-fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+          ${need > 0 ? `<div class="att-warning-msg"><i class="fa-solid fa-triangle-exclamation"></i> Below 75% — you need to attend <strong>${need}</strong> more class${need > 1 ? 'es' : ''} to reach 75%</div>` : ''}
+        </div>`;
+    }).join('');
+  } catch {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)"><i class="fa-solid fa-triangle-exclamation"></i> Could not load attendance</div>';
+  }
+}
+
+loadStudentAttendance();
+{% endif %}
+</script>
+{% endblock %}

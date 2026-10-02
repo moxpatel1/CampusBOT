@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Events — CampusBot{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="events-layout">
+
+    <div class="events-header">
+      <div>
+        <h2>Campus <span class="gradient-text">Events</span></h2>
+        <p>Stay updated with everything happening on campus</p>
+      </div>
+      {% if session.get('user_role') in ['admin', 'faculty'] %}
+      <button class="btn btn-primary" onclick="CampusBot.openModal('create-event-modal')">
+        <i class="fa-solid fa-plus"></i>
+        <span class="btn-text">Create Event</span>
+      </button>
+      {% endif %}
+    </div>
+
+    <div class="events-filters">
+      <button class="filter-chip active" data-filter="all">All</button>
+      <button class="filter-chip" data-filter="academic">
+        <i class="fa-solid fa-book-open"></i> Academic
+      </button>
+      <button class="filter-chip" data-filter="cultural">
+        <i class="fa-solid fa-masks-theater"></i> Cultural
+      </button>
+      <button class="filter-chip" data-filter="sports">
+        <i class="fa-solid fa-trophy"></i> Sports
+      </button>
+      <button class="filter-chip" data-filter="seminar">
+        <i class="fa-solid fa-microphone-lines"></i> Seminar
+      </button>
+    </div>
+
+    <div class="events-grid" id="events-grid"></div>
+
+  </div>
+</div>
+
+{% if session.get('user_role') in ['admin', 'faculty'] %}
+<div class="modal-overlay" id="create-event-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Create Event</h3>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="CampusBot.closeModal('create-event-modal')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <form id="create-event-form">
+      <div class="form-group">
+        <label class="form-label">Event Title</label>
+        <input type="text" class="form-input" id="ev-title" placeholder="e.g. Annual Tech Symposium" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="ev-desc" rows="3" placeholder="Brief description..." style="resize:vertical"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="ev-type">
+            <option value="academic">Academic</option>
+            <option value="cultural">Cultural</option>
+            <option value="sports">Sports</option>
+            <option value="seminar">Seminar</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date &amp; Time</label>
+          <input type="datetime-local" class="form-input" id="ev-date" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-input" id="ev-location" placeholder="e.g. Auditorium A" />
+      </div>
+      <div id="ev-alert"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="CampusBot.closeModal('create-event-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i>
+          <span class="btn-text">Create Event</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allEvents = [];
+
+const typeIcons = {
+  academic: 'fa-book-open',
+  cultural: 'fa-masks-theater',
+  sports:   'fa-trophy',
+  seminar:  'fa-microphone-lines'
+};
+const typeColors = {
+  academic: 'badge-blue',
+  cultural: 'badge-purple',
+  sports:   'badge-green',
+  seminar:  'badge-cyan'
+};
+
+async function loadEvents() {
+  const grid = document.getElementById('events-grid');
+  // skeleton
+  grid.innerHTML = Array(4).fill(`
+    <div class="glass-card" style="padding:var(--space-lg)">
+      <div class="skeleton skeleton-line short" style="margin-bottom:12px"></div>
+      <div class="skeleton skeleton-line medium" style="margin-bottom:8px"></div>
+      <div class="skeleton skeleton-line full" style="margin-bottom:6px"></div>
+      <div class="skeleton skeleton-line medium" style="margin-bottom:16px"></div>
+      <div style="display:flex;justify-content:space-between">
+        <div class="skeleton" style="height:22px;width:80px;border-radius:99px"></div>
+        <div class="skeleton" style="height:22px;width:60px;border-radius:6px"></div>
+      </div>
+    </div>`).join('');
+  try {
+    const res = await fetch('/api/events');
+    allEvents = await res.json();
+    renderEvents(allEvents);
+  } catch {
+    grid.innerHTML = '<div class="empty-state full-width"><i class="fa-solid fa-triangle-exclamation"></i><p>Could not load events</p></div>';
+  }
+}
+
+function renderEvents(events) {
+  const grid = document.getElementById('events-grid');
+  if (!events.length) {
+    grid.innerHTML = '<div class="empty-state full-width"><i class="fa-solid fa-calendar-xmark"></i><p>No events found</p></div>';
+    return;
+  }  grid.innerHTML = events.map(e => `
+    <div class="glass-card event-card ${e.type}">
+      <div class="event-type-bar"></div>
+      <div class="event-date-badge">
+        <i class="fa-regular fa-calendar"></i> ${e.date}
+      </div>
+      <div class="event-title">${e.title}</div>
+      <div class="event-desc">${e.description || 'No description provided.'}</div>
+      <div class="event-footer">
+        <div class="event-location">
+          <i class="fa-solid fa-location-dot"></i> ${e.location || 'TBD'}
+        </div>
+        <span class="badge ${typeColors[e.type] || 'badge-blue'}">
+          <i class="fa-solid ${typeIcons[e.type] || 'fa-tag'}"></i> ${e.type}
+        </span>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    const f = chip.dataset.filter;
+    renderEvents(f === 'all' ? allEvents : allEvents.filter(e => e.type === f));
+  });
+});
+
+document.getElementById('create-event-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.classList.add('loading');
+  const alertEl = document.getElementById('ev-alert');
+  alertEl.innerHTML = '';
+  try {
+    const res = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:       document.getElementById('ev-title').value,
+        description: document.getElementById('ev-desc').value,
+        type:        document.getElementById('ev-type').value,
+        date:        document.getElementById('ev-date').value,
+        location:    document.getElementById('ev-location').value
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      CampusBot.closeModal('create-event-modal');
+      CampusBot.showToast('Event created successfully', 'success');
+      loadEvents();
+    } else {
+      alertEl.innerHTML = `<div class="alert alert-error mt-md"><i class="fa-solid fa-circle-exclamation"></i> ${data.error}</div>`;
+    }
+  } catch {
+    alertEl.innerHTML = '<div class="alert alert-error mt-md"><i class="fa-solid fa-circle-exclamation"></i> Failed to create event</div>';
+  }
+  btn.classList.remove('loading');
+});
+
+loadEvents();
+</script>
+{% endblock %}
