@@ -53,8 +53,8 @@ echo  [3/3] Starting FastAPI server...
 echo.
 echo  ============================================
 echo   Server running at: http://localhost:5000
-echo   Admin login:       bhagyeshshah037@gmail.com
-echo   Admin password:    Bhagyesh@312
+echo   Admin login:       admin@campusbot.com
+echo   Admin password:    Admin123!
 echo   Press CTRL+C to stop the server
 echo  ============================================
 echo.

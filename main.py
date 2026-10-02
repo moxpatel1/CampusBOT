@@ -303,18 +303,20 @@ def startup():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        admin_email = "bhagyeshshah037@gmail.com"
+        admin_email = "admin@campusbot.com"
         existing = db.query(User).filter_by(email=admin_email).first()
         if not existing:
             admin = User(
-                name="Bhagyesh Shah", email=admin_email,
-                password_hash=generate_password_hash("Bhagyesh@312"),
+                name="Mox Patel", email=admin_email,
+                password_hash=generate_password_hash("Admin123!"),
                 role="admin", department="Administration"
             )
             db.add(admin)
             db.commit()
             print(f"[CampusBot] Admin created: {admin_email}")
-        elif existing.role != "admin":
+        else:
+            existing.name = "Mox Patel"
+            existing.password_hash = generate_password_hash("Admin123!")
             existing.role = "admin"
             db.commit()
     finally:

@@ -47,7 +47,7 @@ Visit `http://localhost:5000`
 ## Admin Account
 | Role  | Email                     | Password     |
 |-------|---------------------------|--------------|
-| Admin | bhagyeshshah037@gmail.com | Bhagyesh@312 |
+| Admin | admin@campusbot.com | Admin123! |
 
 ## Features
 - 🤖 AI Campus Chatbot
